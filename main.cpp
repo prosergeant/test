@@ -31,6 +31,7 @@ float vertAngle = 0, horAngle = 0;
 std::string model_path = "", title = "Default", texName[3], font;
 
 bool c_run = false;
+bool c_on = true;
 
 enum states {GAME, CONSOLE } st = GAME;
 
@@ -488,6 +489,11 @@ int parse_ini_file(char * ini_name)
 	posZ = iniparser_getint(ini, "Player:pZ", -1);
 	#ifdef DEBUG
 	printf("Player.z = %i\n", posZ);
+	#endif
+
+	c_on = iniparser_getboolean(ini, "Global:console", -1);
+	#ifdef DEBUG
+	printf("Console = %d\n", c_on);
 	#endif
 	
 	
