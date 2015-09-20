@@ -23,8 +23,11 @@ GLuint loadDDS(const char * imagepath);
 
 #include <GL/glew.h>
 
+#ifdef _WIN32
 #include <glfw3.h>
-
+#else
+#include <GLFW/glfw3.h>
+#endif
 
 GLuint loadBMP_custom(const char * imagepath){
 
