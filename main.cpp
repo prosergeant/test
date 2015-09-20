@@ -1,4 +1,4 @@
-// v 0.2
+// v 0.0.4
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -26,8 +26,13 @@ GLFWwindow* window;
 using namespace glm;
 
 int w = 0, h = 0, chooseTex = 0, posX = 0, posY = 0, posZ = 0; 
+int tgm = 0, tcl = 0;
 float vertAngle = 0, horAngle = 0;
 std::string model_path = "", title = "Default", texName[3], font;
+
+bool c_run = false;
+
+enum states {GAME, CONSOLE } st = GAME;
 
 #include <common/iniparser/iniparser.h>
 #include <common/shader.hpp>
@@ -36,6 +41,7 @@ std::string model_path = "", title = "Default", texName[3], font;
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
 #include <common/text2D.hpp>
+#include "commands.hpp"
 
 int parse_ini_file(char* ini_name);
 
@@ -206,7 +212,12 @@ int main()
 
 		// Use our shader
 		// Compute the MVP matrix from keyboard and mouse input
+		if(st == GAME){
 		computeMatricesFromInputs();
+		}
+		if(st == CONSOLE){
+			console_update();
+		}
 		glm::mat4 ProjectionMatrix = getProjectionMatrix();
 		glm::mat4 ViewMatrix = getViewMatrix();
 		glm::mat4 ScalingMatrix = glm::scale(10.0f,10.0f,10.0f);
@@ -300,6 +311,12 @@ int main()
 		
 		sprintf(text,"%.2f ", horizontalAngle );
 		printText2D(text, 10, 520, 20);
+		
+		sprintf(text,"tgm %i ", tgm );
+		printText2D(text, 10, 480, 20);
+		
+		sprintf(text,"tcl %i ", tcl );
+		printText2D(text, 10, 440, 20);
 
 		sprintf(text,"pX %.2f ", position.x);
 		printText2D(text, 150, 560, 20);
