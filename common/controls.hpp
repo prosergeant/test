@@ -118,6 +118,11 @@ void computeMatricesFromInputs(){
 		position -= up * deltaTime * speed;
 	}
 	
+	if (glfwGetKey( window, GLFW_KEY_GRAVE_ACCENT ) == GLFW_PRESS){
+		st = CONSOLE;
+		c_run = true;
+	}
+	
 	/*
 	if (glfwGetKey( window, GLFW_KEY_E ) == GLFW_PRESS){
 	}
