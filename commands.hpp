@@ -9,7 +9,7 @@ void console_update()
 	char buff[256];
 	float nil = 0;
 	//static bool run = true;
-	if(st == CONSOLE)
+	if(st == CONSOLE && c_on == true)
 	{
 	while(c_run){
 		gets(buff);
