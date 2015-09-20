@@ -34,7 +34,14 @@ bool c_run = false;
 
 enum states {GAME, CONSOLE } st = GAME;
 
+#ifndef _WIN32
+extern "C" {
 #include <common/iniparser/iniparser.h>
+}
+#else
+#include <common/iniparser/iniparser.h>
+#endif
+
 #include <common/shader.hpp>
 #include <common/texture.hpp>
 #include <common/controls.hpp>
