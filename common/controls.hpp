@@ -81,21 +81,21 @@ void computeMatricesFromInputs(){
 
 	// Direction : Spherical coordinates to Cartesian coordinates conversion
 	glm::vec3 direction(
-		cos(verticalAngle) * sin(horizontalAngle), 
+		cos(verticalAngle) * sin(horizontalAngle),
 		sin(verticalAngle),
 		cos(verticalAngle) * cos(horizontalAngle)
 	);
-	
+
 	// Right vector
 	glm::vec3 right = glm::vec3(
-		sin(horizontalAngle - 3.14f/2.0f), 
+		sin(horizontalAngle - 3.14f/2.0f),
 		0,
 		cos(horizontalAngle - 3.14f/2.0f)
 	);
-	
+
 	// Up vector
 	glm::vec3 up = glm::cross( right, direction );
-	
+
 	// Move forward
 	if (glfwGetKey( window, GLFW_KEY_W ) == GLFW_PRESS){
 		position += direction * deltaTime * speed;
@@ -120,10 +120,12 @@ void computeMatricesFromInputs(){
 	if (glfwGetKey( window, GLFW_KEY_LEFT_CONTROL ) == GLFW_PRESS){
 		position -= up * deltaTime * speed;
 	}
-	
+
 	if (glfwGetKey( window, GLFW_KEY_GRAVE_ACCENT ) == GLFW_PRESS){
-		st = CONSOLE;
-		c_run = true;
+		if(c_on){
+			st = CONSOLE;
+			c_run = true;
+		}
 	}
 	
 	/*
