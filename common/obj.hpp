@@ -116,14 +116,15 @@ void createBufAndDraw(std::vector<glm::vec3> vertices, std::vector<glm::vec2> uv
 }
 */
 
-
+#include <string>
+#include <glm/gtc/type_ptr.hpp>
 
 class Obj
 {
 	public:
-	float m;									// The mass value
-	glm::vec3 pos;								// Position in space
-	glm::vec3 vel;								// Velocity
+	float m;			// The mass value
+	glm::vec3 pos;			// Position in space
+	glm::vec3 vel;			// Velocity
 	glm::vec3 force;	
 	float Rx, Ry, Rz;
 	float frustum[6][4];
@@ -132,6 +133,7 @@ class Obj
 	std::vector<glm::vec2> uv;
 	std::vector<glm::vec3> norm;
 	std::vector<unsigned short> indices;
+	std::string tex;
 	GLuint shader, Texture, TextureID;
 	GLuint vertexbuffer;
 	GLuint uvbuffer;
@@ -140,12 +142,12 @@ class Obj
 		
 	Obj(){}
 	
-	Obj(float xx, float yy, float zz, std::vector<glm::vec3> vertt, std::vector<glm::vec2> uvv, std::vector<glm::vec3> normm, std::vector<unsigned short> indicess, GLuint shaderr, GLuint Texturee, GLuint TextureIDd)
+	Obj(float xx, float yy, float zz, std::vector<glm::vec3> vertt, std::vector<glm::vec2> uvv, std::vector<glm::vec3> normm, std::vector<unsigned short> indicess, std::string Texturee)
 	{
 		pos.x = xx;
 		pos.y = yy;
 		pos.z = zz;
-		
+		/*
 		vert = vertt;
 		uv = uvv;
 		norm = normm;
@@ -155,6 +157,43 @@ class Obj
 		
 		Texture = Texturee;
 		TextureID = TextureIDd;
+		*/
+
+
+		tex = Texturee;
+
+		shader = LoadShaders( "StandardShading.vertexshader", "StandardShading.fragmentshader" );
+		
+		glUseProgram(shader);
+		GLuint LightID = glGetUniformLocation(shader, "LightPosition_worldspace");
+	
+		glm::vec3 lightPos = glm::vec3(4,7,4);
+		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
+	
+		Texture = loadDDS(tex.c_str());
+
+		TextureID  = glGetUniformLocation(shader, "MyTextureSampler");
+		
+		vert = vertt;
+		uv = uvv;
+		norm = normm;
+		indices = indicess;
+	
+		glGenBuffers(1, &vertexbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+		glBufferData(GL_ARRAY_BUFFER, vert.size() * sizeof(glm::vec3), &vert[0], GL_STATIC_DRAW);
+		
+		glGenBuffers(1, &uvbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+		glBufferData(GL_ARRAY_BUFFER, uv.size() * sizeof(glm::vec2), &uv[0], GL_STATIC_DRAW);
+		
+		glGenBuffers(1, &normalbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+		glBufferData(GL_ARRAY_BUFFER, norm.size() * sizeof(glm::vec3), &norm[0], GL_STATIC_DRAW);
+		
+		glGenBuffers(1, &elementbuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
 	}
 	
 	/*
@@ -164,11 +203,30 @@ class Obj
 	}
 	*/
 	
-	void Load(std::vector<glm::vec3> vertices, std::vector<glm::vec2> uvs, std::vector<glm::vec3> normals, std::vector<unsigned short> indicess, GLuint shaderr, GLuint Texturee, GLuint TextureIDd)
+	void Load(std::vector<glm::vec3> vertices,
+			std::vector<glm::vec2> uvs,
+			std::vector<glm::vec3> normals,
+			std::vector<unsigned short> indicess,
+			//GLuint shaderr,
+			std::string Texturee)
+			//GLuint TextureIDd)
 	{		
-		shader = shaderr;
-		TextureID = TextureIDd;
-		Texture = Texturee;
+		//shader = shaderr;
+		//TextureID = TextureIDd;
+		//Texture = Texturee;
+		tex = Texturee;
+
+		shader = LoadShaders( "StandardShading.vertexshader", "StandardShading.fragmentshader" );
+		
+		glUseProgram(shader);
+		GLuint LightID = glGetUniformLocation(shader, "LightPosition_worldspace");
+	
+		glm::vec3 lightPos = glm::vec3(4,7,4);
+		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
+	
+		Texture = loadDDS(tex.c_str());
+
+		TextureID  = glGetUniformLocation(shader, "MyTextureSampler");
 		
 		vert = vertices;
 		uv = uvs;
@@ -200,6 +258,8 @@ class Obj
 		glDeleteBuffers(1, &uvbuffer);
 		glDeleteBuffers(1, &normalbuffer);
 		glDeleteBuffers(1, &elementbuffer);
+		glDeleteProgram(shader);
+		glDeleteTextures(1, &Texture);
 	}
 	
 	void DrawAt(float xx, float yy, float zz)
@@ -228,6 +288,35 @@ class Obj
 		GLuint vertexUVID = glGetAttribLocation(shader, "vertexUV");
 		GLuint vertexNormal_modelspaceID = glGetAttribLocation(shader, "vertexNormal_modelspace"); 
 		
+		//Rot.y += 3.14159f/2.0f * deltaTime;
+		
+		/*
+		if(sp == true){
+			Rot.y += 3.14159f/2.0f * deltaTime;
+			if(Rot.y >= 6.22f) Rot.y = 0;
+		}	
+		if(sp == false) Rot.y += 0;
+		*/
+		
+		glm::mat4 ScalingMatrix = glm::scale(10.0f,10.0f,10.0f);
+		//glm::mat4 RotationMatrix = eulerAngleYXZ(Rot.y,Rot.x,Rot.z);
+		glm::mat4 ProjectionMatrix = getProjectionMatrix();
+		glm::mat4 ViewMatrix = getViewMatrix();
+		glm::mat4 TranslationMatrix = glm::translate(mat4(), vec3(pos.x,pos.y,pos.z)); // A bit to the left
+		glm::mat4 ModelMatrix = TranslationMatrix * ScalingMatrix; // * TranslationMatrix * RotationMatrix * ScalingMatrix;
+ 
+		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
+		
+		GLuint MatrixID = glGetUniformLocation(shader, "MVP");
+		GLuint ViewMatrixID = glGetUniformLocation(shader, "V");
+		GLuint ModelMatrixID = glGetUniformLocation(shader, "M");
+		
+		// Send our transformation to the currently bound shader, 
+		// in the "MVP" uniform
+		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
+
 		// 1rst attribute buffer : vertices
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -265,34 +354,6 @@ class Obj
 		);
 		
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-		
-		//Rot.y += 3.14159f/2.0f * deltaTime;
-		
-		if(sp == true){
-			Rot.y += 3.14159f/2.0f * deltaTime;
-			if(Rot.y >= 6.22f) Rot.y = 0;
-		}	
-		if(sp == false) Rot.y += 0;
-		
-		
-		//glm::mat4 ScalingMatrix = glm::scale(2.5f,2.5f,2.5f);
-		glm::mat4 RotationMatrix = eulerAngleYXZ(Rot.y,Rot.x,Rot.z);
-		glm::mat4 ProjectionMatrix = getProjectionMatrix();
-		glm::mat4 ViewMatrix = getViewMatrix();
-		glm::mat4 TranslationMatrix = glm::translate(mat4(), vec3(pos.x,pos.y,pos.z)); // A bit to the left
-		glm::mat4 ModelMatrix = TranslationMatrix * RotationMatrix; // * RotationMatrix * ScalingMatrix;
- 
-		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
-		
-		GLuint MatrixID = glGetUniformLocation(shader, "MVP");
-		GLuint ViewMatrixID = glGetUniformLocation(shader, "V");
-		GLuint ModelMatrixID = glGetUniformLocation(shader, "M");
-		
-		// Send our transformation to the currently bound shader, 
-		// in the "MVP" uniform
-		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
-		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
 		
 		glDrawElements(
 				GL_TRIANGLES,      // mode
