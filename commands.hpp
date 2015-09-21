@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <iostream>
 #include <cstring>
+#include <vector>
 
-//enum states {GAME, CONSOLE } st = CONSOLE;
+bool send = false, coord = false, rm = false;
+float oX = 0, oY = 0, oZ = 0;
+int ix = 0;
 
 void console_update()
 {
@@ -45,13 +48,23 @@ void console_update()
 		{
 			fscanf(f, "%f %f %f\n", &position.x, &position.y, &position.z);
 		}
-		else if(strcmp(buff, "pos --help") == 0)
-		{
-			printf("to change a position, write: pos x y z and hit ENTER\n");
-		}
 		else if(strcmp(buff, "angle") == 0)
 		{
 			fscanf(f, "%f %f\n", &verticalAngle, &horizontalAngle);
+		}
+		else if(strcmp(buff, "create") == 0) 
+		{
+			send = true;
+		}
+		else if(strcmp(buff, "create-pos") == 0)
+		{
+			fscanf(f, "%f %f %f\n", &oX, &oY, &oZ);
+			coord = true;
+		}
+		else if(strcmp(buff, "remove-index") == 0)
+		{
+			fscanf(f, "%f\n", &ix);
+			rm = true;	//objs.erase(objs.begin()+index);
 		}
 		}
 		fclose(f);
