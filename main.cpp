@@ -20,9 +20,9 @@ GLFWwindow* window;
 
 
 // Include GLM
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/transform.hpp>
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtx/transform.hpp"
 using namespace glm;
 
 int w = 0, h = 0, chooseTex = 0, posX = 0, posY = 0, posZ = 0; 
@@ -50,6 +50,7 @@ extern "C" {
 #include <common/vboindexer.hpp>
 #include <common/text2D.hpp>
 #include "commands.hpp"
+#include <common/obj.hpp>
 
 int parse_ini_file(char* ini_name);
 
@@ -111,40 +112,19 @@ int main()
 	glfwSetCursorPos(window, w/2, h/2);
 
 	
-	// Dark blue background
+
 	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
-	// Enable depth test
 	glEnable(GL_DEPTH_TEST);
-	// Accept fragment if it closer to the camera than the former one
+
 	glDepthFunc(GL_LESS); 
 
-	// Cull triangles which normal is not towards the camera
 	glEnable(GL_CULL_FACE);
 
 	GLuint VertexArrayID;
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
-		// Create and compile our GLSL program from the shaders
-	GLuint programID = LoadShaders( "StandardShading.vertexshader", "StandardShading.fragmentshader" );
-
-	// Get a handle for our "MVP" uniform
-	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
-	GLuint ViewMatrixID = glGetUniformLocation(programID, "V");
-	GLuint ModelMatrixID = glGetUniformLocation(programID, "M");
-
-	// Load the texture
-	GLuint Texture = loadDDS(texName[chooseTex].c_str()); //diffuse
-	//GLuint NormalTexture = loadBMP_custom(texName[1].c_str()); //normal
-	//GLuint SpecularTexture = loadDDS(texName[2].c_str()); //specular
-	
-	// Get a handle for our "myTextureSampler" uniform
-	GLuint TextureID  = glGetUniformLocation(programID, "MyTextureSampler");
-	//GLuint NormalTextureID  = glGetUniformLocation(programID, "NormalTextureSampler");
-	//GLuint SpecularTextureID  = glGetUniformLocation(programID, "SpecularTextureSampler");
-
-// Read our .obj file
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec2> uvs;
 	std::vector<glm::vec3> normals;
@@ -155,45 +135,25 @@ int main()
 	std::vector<glm::vec2> indexed_uvs;
 	std::vector<glm::vec3> indexed_normals;
 	indexVBO(vertices, uvs, normals, indices, indexed_vertices, indexed_uvs, indexed_normals);
-
-
-	// Load it into a VBO
-
-	GLuint vertexbuffer;
-	glGenBuffers(1, &vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-	glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
-
-	GLuint uvbuffer;
-	glGenBuffers(1, &uvbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-	glBufferData(GL_ARRAY_BUFFER, indexed_uvs.size() * sizeof(glm::vec2), &indexed_uvs[0], GL_STATIC_DRAW);
-
-	GLuint normalbuffer;
-	glGenBuffers(1, &normalbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
-	glBufferData(GL_ARRAY_BUFFER, indexed_normals.size() * sizeof(glm::vec3), &indexed_normals[0], GL_STATIC_DRAW);
-
-	// Generate a buffer for the indices as well
-	GLuint elementbuffer;
-	glGenBuffers(1, &elementbuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0], GL_STATIC_DRAW);
-
-	// Get a handle for our "LightPosition" uniform
-	glUseProgram(programID);
-	GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
 	
-	glm::vec3 lightPos = glm::vec3(4,7,4);
-	glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
+	std::vector<Obj*> objs;
+	std::vector<Obj*>::iterator oIT;
 	
+	objs.push_back(	new Obj(0.0f, 0.0f, 0.0f,
+			indexed_vertices,
+			indexed_uvs,
+			indexed_normals,
+			indices,
+			texName[chooseTex]));
+
+
 	position = glm::vec3(posX, posY, posZ);
 	verticalAngle = vertAngle;
 	horizontalAngle = horAngle;
 	
 	initText2D( font.c_str() );
 	
-	// For speed computation
+
 	double lastTime = glfwGetTime();
 	int nbFrames = 0;
 	char text[256];
@@ -206,108 +166,62 @@ int main()
 		double currentTime = glfwGetTime();
 		nbFrames++;
 		if ( currentTime - lastTime >= 1.0 ){ // If last prinf() was more than 1sec ago
-			// printf and reset
 			printf("%f ms/frame\n", 1000.0/double(nbFrames));
 			nbFrames = 0;
 			lastTime += 1.0;
 		}
 		#endif
 		#endif
-		// Clear the screen
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
-		glUseProgram(programID);
 
-		// Use our shader
-		// Compute the MVP matrix from keyboard and mouse input
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		if(st == GAME){
 		computeMatricesFromInputs();
 		}
 		if(st == CONSOLE){
 			console_update();
 		}
-		glm::mat4 ProjectionMatrix = getProjectionMatrix();
-		glm::mat4 ViewMatrix = getViewMatrix();
-		glm::mat4 ScalingMatrix = glm::scale(10.0f,10.0f,10.0f);
-		//glm::mat4 RotationMatrix = eulerAngleYXZ(0.0f, 0.0f, 0.0f);
-		//glm::mat4 TranslationMatrix = glm::translate(mat4(), vec3(0.0f, 0.0f, 0.0f));
-		glm::mat4 ModelMatrix = ScalingMatrix; //TranslationMatrix * RotationMatrix * ScalingMatrix; //glm::mat4(1.0f);
-		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
+		
+		if(coord == true)
+		{
+			objs.push_back(	new Obj(oX, oY, oZ,
+			indexed_vertices,
+			indexed_uvs,
+			indexed_normals,
+			indices,
+			texName[chooseTex]));
+			coord = false;
+		}
 
-		// Send our transformation to the currently bound shader, 
-		// in the "MVP" uniform
-		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
-		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
+		if(send == true)
+		{
+			objs.push_back(	new Obj(position.x, position.y, position.z,
+			indexed_vertices,
+			indexed_uvs,
+			indexed_normals,
+			indices,
+			texName[chooseTex]));
+			send = false;
+		}
 
+		if(rm == true)
+		{
+			objs.erase(objs.begin()+ix);
+			rm = false;
+		}
 
+		for(oIT = objs.begin(); oIT != objs.end(); oIT++)
+		{
+			Obj *a = *oIT;
+			
+			a->ExtractFrustum();
 
-		// Bind our diffuse texture in Texture Unit 0
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, Texture);
-		// Set our "DiffuseTextureSampler" sampler to user Texture Unit 0
-		glUniform1i(TextureID, 0);
-	
-		/*
-		// Bind our normal texture in Texture Unit 1
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, NormalTexture);
-		// Set our "Normal	TextureSampler" sampler to user Texture Unit 0
-		glUniform1i(NormalTextureID, 1);
-
-		// Bind our normal texture in Texture Unit 2
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, SpecularTexture);
-		// Set our "Normal	TextureSampler" sampler to user Texture Unit 0
-		glUniform1i(SpecularTextureID, 2);
-		*/
-
-		// 1rst attribute buffer : vertices
-		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-		glVertexAttribPointer(
-			0,                  // attribute
-			3,                  // size
-			GL_FLOAT,           // type
-			GL_FALSE,           // normalized?
-			0,                  // stride
-			(void*)0            // array buffer offset
-		);
-
-		// 2nd attribute buffer : UVs
-		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-		glVertexAttribPointer(
-			1,                                // attribute
-			2,                                // size
-			GL_FLOAT,                         // type
-			GL_FALSE,                         // normalized?
-			0,                                // stride
-			(void*)0                          // array buffer offset
-		);
-
-		// 3rd attribute buffer : normals
-		glEnableVertexAttribArray(2);
-		glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
-		glVertexAttribPointer(
-			2,                                // attribute
-			3,                                // size
-			GL_FLOAT,                         // type
-			GL_FALSE,                         // normalized?
-			0,                                // stride
-			(void*)0                          // array buffer offset
-		);
-
-		// Index buffer
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-
-		// Draw the triangles !
-		glDrawElements(
-			GL_TRIANGLES,      // mode
-			indices.size(),    // count
-			GL_UNSIGNED_SHORT, // type
-			(void*)0           // element array buffer offset
-		);
+			if(a->SphereInFrustum(a->pos.x, a->pos.y, a->pos.z, 8.0f))
+			{
+				tcl++;
+				a->DrawAt(a->pos.x, a->pos.y, a->pos.z);
+			}
+		}
 
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
@@ -347,8 +261,7 @@ int main()
 		}
 			sprintf(text, "%.0f ", 1000.0/double(nbFrames));
 			printText2D(text, 10, 480, 20);
-		#endif
-		
+		#endif		
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -357,15 +270,12 @@ int main()
 	while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
 		   glfwWindowShouldClose(window) == 0 );
 	
-	// Cleanup VBO and shader
-	glDeleteBuffers(1, &vertexbuffer);
-	glDeleteBuffers(1, &uvbuffer);
-	glDeleteBuffers(1, &normalbuffer);
-	glDeleteBuffers(1, &elementbuffer);
-	glDeleteProgram(programID);
-	glDeleteTextures(1, &Texture);
-	//glDeleteTextures(1, &NormalTexture);
-	//glDeleteTextures(1, &SpecularTexture);
+	for(oIT = objs.begin(); oIT != objs.end(); oIT++)
+		{
+			Obj *a = *oIT;
+			delete a;
+		}
+
 	glDeleteVertexArrays(1, &VertexArrayID);
 
 	// Close OpenGL window and terminate GLFW
