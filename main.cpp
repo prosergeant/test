@@ -40,7 +40,10 @@ extern "C" {
 #include <common/iniparser/iniparser.h>
 }
 #else
-#include <common/iniparser/iniparser.h>
+extern "C" {
+#include <iniparser/src/iniparser.h>
+#include <iniparser/src/dictionary.h>
+}
 #endif
 
 #include <common/shader.hpp>
@@ -314,21 +317,13 @@ int parse_ini_file(char * ini_name)
 	printf("horAngle = %f\n", horAngle);
 	#endif
 	
-	#ifdef _WIN32
-	path = iniparser_getstring(ini, "Level:model", NULL);
-	#else
 	path = const_cast<char*>(iniparser_getstring(ini, "Level:model", NULL));
-	#endif
 	model_path = path;
 	#ifdef DEBUG
 	printf("path = %s\nmodel_path = %s\n", path, model_path.c_str());
 	#endif
 	
-	#ifdef _WIN32
-	path = iniparser_getstring(ini, "Global:title", NULL);
-	#else
 	path = const_cast<char*>(iniparser_getstring(ini, "Global:title", NULL));
-	#endif
 	title = path;
 	#ifdef DEBUG
 	printf("path = %s\ntitle = %s\n", path, title.c_str());
@@ -341,41 +336,25 @@ int parse_ini_file(char * ini_name)
 	#endif
 	
 	char* texBuff[3];
-	#ifdef _WIN32
-	texBuff[0] = iniparser_getstring(ini, "Level:t1", NULL);
-	#else
 	texBuff[0] = const_cast<char*>(iniparser_getstring(ini, "Level:t1", NULL));
-	#endif
 	texName[0] = texBuff[0];
 	#ifdef DEBUG
 	printf("texBuff = %s\ntexName = %s\n", texBuff[0], texName[0].c_str());
 	#endif
 	
-	#ifdef _WIN32
-	texBuff[1] = iniparser_getstring(ini, "Level:t2", NULL);
-	#else
 	texBuff[1] = const_cast<char*>(iniparser_getstring(ini, "Level:t2", NULL));
-	#endif
 	texName[1] = texBuff[1];
 	#ifdef DEBUG
 	printf("texBuff = %s\ntexName = %s\n", texBuff[1], texName[1].c_str());
 	#endif
 	
-	#ifdef _WIN32
-	texBuff[2] = iniparser_getstring(ini, "Level:t3", NULL);
-	#else
 	texBuff[2] = const_cast<char*>(iniparser_getstring(ini, "Level:t3", NULL));
-	#endif
 	texName[2] = texBuff[2];
 	#ifdef DEBUG
 	printf("texBuff = %s\ntexName = %s\n", texBuff[2], texName[2].c_str());
 	#endif
 	
-	#ifdef _WIN32
-	path = iniparser_getstring(ini, "Global:font", NULL);
-	#else
 	path = const_cast<char*>(iniparser_getstring(ini, "Global:font", NULL));
-	#endif
 	font = path;
 	#ifdef DEBUG
 	printf("font = %s\n", font.c_str());
