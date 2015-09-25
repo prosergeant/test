@@ -41,12 +41,14 @@ bool loadAssImp(
 // - More secure. Change another line and you can inject code.
 // - Loading from memory, stream, etc
 
+
 bool loadOBJ(
 	const char * path, 
 	std::vector<glm::vec3> & out_vertices, 
 	std::vector<glm::vec2> & out_uvs,
-	std::vector<glm::vec3> & out_normals
-){
+	std::vector<glm::vec3> & out_normals,
+	std::vector<unsigned short> & out_indices
+	){
 	printf("Loading OBJ file %s...\n", path);
 
 	std::vector<unsigned int> vertexIndices, uvIndices, normalIndices;
@@ -129,7 +131,20 @@ bool loadOBJ(
 		out_normals .push_back(normal);
 	
 	}
-
+	
+	std::vector<unsigned short> indices;
+	std::vector<glm::vec3> indexed_vertices;
+	std::vector<glm::vec2> indexed_uvs;
+	std::vector<glm::vec3> indexed_normals;
+	
+	printf("111\n");
+	
+	indexVBO(out_vertices, out_uvs, out_normals, indices, indexed_vertices, indexed_uvs, indexed_normals);
+	out_vertices = indexed_vertices;
+	out_uvs = indexed_uvs;
+	out_normals = indexed_normals;
+	out_indices = indices;
+	
 	return true;
 }
 
