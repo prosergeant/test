@@ -8,6 +8,8 @@
 //#define DEBUG
 //#define DEBUG_FRAMES
 
+#define FOR(i, a) for(i = 0; i < a; i++)
+
 // Include GLEW
 #include <GL/glew.h>
 
@@ -25,16 +27,25 @@ GLFWwindow* window;
 #include "glm/gtx/transform.hpp"
 using namespace glm;
 
-int w = 0, h = 0, chooseTex = 0, posX = 0, posY = 0, posZ = 0; 
+const int Texture_n = 3;
+
+int w = 0, h = 0, chooseTex = 0, posX = 0, posY = 0, posZ = 0, shader_v = 0; 
 int tgm = 0, tcl = 0;
+GLuint shader, Texture[Texture_n];
 float vertAngle = 0, horAngle = 0;
-std::string model_path = "", title = "Default", texName[3], font;
+std::string model_path = "", title = "Default", texName[Texture_n], font;
+
+std::vector<std::vector<glm::vec3> > vertices;
+std::vector<std::vector<glm::vec2> > uvs;
+std::vector<std::vector<glm::vec3> > normals;
+std::vector<std::vector<unsigned short> > indices;
 
 bool c_run = false;
 bool c_on = true;
 
 enum states {GAME, CONSOLE } st = GAME;
 
+/*
 #ifndef _WIN32
 extern "C" {
 #include <common/iniparser/iniparser.h>
@@ -45,17 +56,21 @@ extern "C" {
 #include <iniparser/src/dictionary.h>
 }
 #endif
+*/
 
+
+#include <iniparser/src/iniparser.h>
 #include <common/shader.hpp>
 #include <common/texture.hpp>
 #include <common/controls.hpp>
-#include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
+#include <common/objloader.hpp>
 #include <common/text2D.hpp>
 #include "commands.hpp"
 #include <common/obj.hpp>
 
 int parse_ini_file(char* ini_name);
+void init();
 
 int main()
 {
@@ -75,12 +90,16 @@ int main()
 		system("pause");
 		return 0;
 	}
-	
+	if(shader_v == 3){
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
+	}else{
+		glfwWindowHint(GLFW_SAMPLES, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+	}
 	window = glfwCreateWindow( w, h, title.c_str(), NULL, NULL);
 	if( window == NULL ){
 		fprintf( stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n" );
@@ -128,39 +147,28 @@ int main()
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
-	std::vector<glm::vec3> vertices;
-	std::vector<glm::vec2> uvs;
-	std::vector<glm::vec3> normals;
-	bool res = loadOBJ(model_path.c_str(), vertices, uvs, normals);
-
-	std::vector<unsigned short> indices;
-	std::vector<glm::vec3> indexed_vertices;
-	std::vector<glm::vec2> indexed_uvs;
-	std::vector<glm::vec3> indexed_normals;
-	indexVBO(vertices, uvs, normals, indices, indexed_vertices, indexed_uvs, indexed_normals);
-	
+	init();	
+		
 	std::vector<Obj*> objs;
 	std::vector<Obj*>::iterator oIT;
-	
+		
 	objs.push_back(	new Obj(0.0f, 0.0f, 0.0f,
-			indexed_vertices,
-			indexed_uvs,
-			indexed_normals,
-			indices,
-			texName[chooseTex]));
-
+			vertices[0], //indexed_vertices,
+			uvs[0], 	 //indexed_uvs,
+			normals[0],  //indexed_normals,
+			indices[0],
+			Texture[0])); //texName[chooseTex]));
 
 	position = glm::vec3(posX, posY, posZ);
 	verticalAngle = vertAngle;
 	horizontalAngle = horAngle;
 	
 	initText2D( font.c_str() );
-	
 
 	double lastTime = glfwGetTime();
 	int nbFrames = 0;
 	char text[256];
-	
+
 	do{
 		
 		// Measure speed
@@ -181,29 +189,30 @@ int main()
 		if(st == GAME){
 		computeMatricesFromInputs();
 		}
+
 		if(st == CONSOLE){
 			console_update();
 		}
-		
+
 		if(coord == true)
 		{
 			objs.push_back(	new Obj(oX, oY, oZ,
-			indexed_vertices,
-			indexed_uvs,
-			indexed_normals,
-			indices,
-			texName[chooseTex]));
+			vertices[0],
+			uvs[0],
+			normals[0],
+			indices[0],
+			Texture[texID])); //texName[chooseTex]);
 			coord = false;
 		}
 
 		if(send == true)
 		{
 			objs.push_back(	new Obj(position.x, position.y, position.z,
-			indexed_vertices,
-			indexed_uvs,
-			indexed_normals,
-			indices,
-			texName[chooseTex]));
+			vertices[0],
+			uvs[0],
+			normals[0],
+			indices[0],
+			Texture[0]));
 			send = false;
 		}
 
@@ -216,7 +225,7 @@ int main()
 		for(oIT = objs.begin(); oIT != objs.end(); oIT++)
 		{
 			Obj *a = *oIT;
-			
+
 			a->ExtractFrustum();
 
 			if(a->SphereInFrustum(a->pos.x, a->pos.y, a->pos.z, 8.0f))
@@ -229,26 +238,26 @@ int main()
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
 		glDisableVertexAttribArray(2);
-		
+
 		//char text[256];
 		sprintf(text,"%.2f ", verticalAngle );
 		printText2D(text, 10, 560, 20);
-		
+
 		sprintf(text,"%.2f ", horizontalAngle );
 		printText2D(text, 10, 520, 20);
-		
+
 		sprintf(text,"tgm %i ", tgm );
 		printText2D(text, 10, 480, 20);
-		
+
 		sprintf(text,"tcl %i ", tcl );
 		printText2D(text, 10, 440, 20);
-
+		
 		sprintf(text,"pX %.2f ", position.x);
 		printText2D(text, 150, 560, 20);
-
+		
 		sprintf(text,"pY %.2f ", position.y);
 		printText2D(text, 150, 520, 20);
-
+		
 		sprintf(text,"pZ %.2f ", position.z);
 		printText2D(text, 150, 480, 20);
 		
@@ -262,28 +271,23 @@ int main()
 			nbFrames = 0;
 			lastTime += 1.0;
 		}
+
 			sprintf(text, "%.0f ", 1000.0/double(nbFrames));
 			printText2D(text, 10, 480, 20);
 		#endif		
-
 		glfwSwapBuffers(window);
 		glfwPollEvents();
-	
 	} 
 	while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
 		   glfwWindowShouldClose(window) == 0 );
-	
 	for(oIT = objs.begin(); oIT != objs.end(); oIT++)
 		{
 			Obj *a = *oIT;
 			delete a;
 		}
-
 	glDeleteVertexArrays(1, &VertexArrayID);
-
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
-
 	return 0;
 }
 
@@ -385,7 +389,54 @@ int parse_ini_file(char * ini_name)
 	printf("Console = %d\n", c_on);
 	#endif
 	
+	shader_v = iniparser_getint(ini, "Global:shader", -1);
+	#ifdef DEBUG
+	printf("Shader version = %i\n", shader_v);
+	#endif
 	
     iniparser_freedict(ini);
     return 0 ;
+}
+
+
+void init()
+{
+	int i = 0;
+	/*
+	std::vector<glm::vec3> vertices_;
+	std::vector<glm::vec2> uvs_;
+	std::vector<glm::vec3> normals_;
+	bool res = loadOBJ(model_path.c_str(), vertices_, uvs_, normals_);
+
+	std::vector<unsigned short> indicess;
+	std::vector<glm::vec3> indexed_vertices;
+	std::vector<glm::vec2> indexed_uvs;
+	std::vector<glm::vec3> indexed_normals;
+	indexVBO(vertices_, uvs_, normals_, indicess, indexed_vertices, indexed_uvs, indexed_normals);
+	*/
+	
+	std::vector<unsigned short> indicess;
+	std::vector<glm::vec3> indexed_vertices;
+	std::vector<glm::vec2> indexed_uvs;
+	std::vector<glm::vec3> indexed_normals;
+	
+	loadOBJ(model_path.c_str(), indexed_vertices, indexed_uvs, indexed_normals, indicess);
+	
+	vertices.push_back(indexed_vertices);
+	uvs.push_back(indexed_uvs);
+	normals.push_back(indexed_normals);
+	indices.push_back(indicess);
+	
+	shader = LoadShaders( "StandardShading.vertexshader", "StandardShading.fragmentshader" );
+
+	FOR(i, Texture_n)
+	{
+		Texture[i] = loadDDS(texName[i].c_str());
+	}
+	
+	glUseProgram(shader);
+	GLuint LightID = glGetUniformLocation(shader, "LightPosition_worldspace");
+	
+	glm::vec3 lightPos = glm::vec3(4,7,4);
+	glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
 }
