@@ -136,9 +136,7 @@ bool loadOBJ(
 	std::vector<glm::vec3> indexed_vertices;
 	std::vector<glm::vec2> indexed_uvs;
 	std::vector<glm::vec3> indexed_normals;
-	
-	printf("111\n");
-	
+		
 	indexVBO(out_vertices, out_uvs, out_normals, indices, indexed_vertices, indexed_uvs, indexed_normals);
 	out_vertices = indexed_vertices;
 	out_uvs = indexed_uvs;
