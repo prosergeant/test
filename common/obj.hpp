@@ -132,17 +132,21 @@ class Obj
 	std::vector<glm::vec3> vert;
 	std::vector<glm::vec2> uv;
 	std::vector<glm::vec3> norm;
-	std::vector<unsigned short> indices;
-	std::string tex;
-	GLuint shader, Texture, TextureID;
+	std::vector<unsigned short> indicess;
+	GLuint shaderr, Texture, TextureID;
 	GLuint vertexbuffer;
 	GLuint uvbuffer;
 	GLuint normalbuffer;
 	GLuint elementbuffer;
 		
-	Obj(){}
+	//Obj(){}
 	
-	Obj(float xx, float yy, float zz, std::vector<glm::vec3> vertt, std::vector<glm::vec2> uvv, std::vector<glm::vec3> normm, std::vector<unsigned short> indicess, std::string Texturee)
+	Obj(float xx, float yy, float zz,
+				std::vector<glm::vec3> vertt,
+				std::vector<glm::vec2> uvv,
+				std::vector<glm::vec3> normm,
+				std::vector<unsigned short> indicesss,
+				GLuint Texturee)
 	{
 		pos.x = xx;
 		pos.y = yy;
@@ -157,32 +161,33 @@ class Obj
 		
 		Texture = Texturee;
 		TextureID = TextureIDd;
-		*/
-
 
 		tex = Texturee;
+		*/
 
-		shader = LoadShaders( "StandardShading.vertexshader", "StandardShading.fragmentshader" );
+		/*shader = LoadShaders( "StandardShading.vertexshader", "StandardShading.fragmentshader" );
 		
 		glUseProgram(shader);
 		GLuint LightID = glGetUniformLocation(shader, "LightPosition_worldspace");
 	
 		glm::vec3 lightPos = glm::vec3(4,7,4);
 		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
-	
-		Texture = loadDDS(tex.c_str());
+		*/		
+		shaderr = shader;
+		
+		Texture = Texturee;
 
-		TextureID  = glGetUniformLocation(shader, "MyTextureSampler");
+		TextureID  = glGetUniformLocation(shaderr, "MyTextureSampler");
 		
 		vert = vertt;
 		uv = uvv;
 		norm = normm;
-		indices = indicess;
-	
+		indicess = indicesss;
+			
 		glGenBuffers(1, &vertexbuffer);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 		glBufferData(GL_ARRAY_BUFFER, vert.size() * sizeof(glm::vec3), &vert[0], GL_STATIC_DRAW);
-		
+				
 		glGenBuffers(1, &uvbuffer);
 		glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
 		glBufferData(GL_ARRAY_BUFFER, uv.size() * sizeof(glm::vec2), &uv[0], GL_STATIC_DRAW);
@@ -193,7 +198,7 @@ class Obj
 		
 		glGenBuffers(1, &elementbuffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicess.size() * sizeof(unsigned short), &indicess[0] , GL_STATIC_DRAW);
 	}
 	
 	/*
@@ -203,6 +208,8 @@ class Obj
 	}
 	*/
 	
+	//лоад устарел его надо поправить, хотя я пока не вижу смысла его использовать
+	/*
 	void Load(std::vector<glm::vec3> vertices,
 			std::vector<glm::vec2> uvs,
 			std::vector<glm::vec3> normals,
@@ -251,6 +258,7 @@ class Obj
 
 		
 	}
+	*/
 	
 	void Unload()
 	{
@@ -258,7 +266,7 @@ class Obj
 		glDeleteBuffers(1, &uvbuffer);
 		glDeleteBuffers(1, &normalbuffer);
 		glDeleteBuffers(1, &elementbuffer);
-		glDeleteProgram(shader);
+		glDeleteProgram(shaderr);
 		glDeleteTextures(1, &Texture);
 	}
 	
@@ -267,7 +275,6 @@ class Obj
 		pos.x = xx;
 		pos.y = yy;
 		pos.z = zz;
-		
 		// glfwGetTime is called only once, the first time this function is called
 		static double lastTime = glfwGetTime();
 
@@ -275,19 +282,16 @@ class Obj
 		double currentTime = glfwGetTime();
 		float deltaTime = float(currentTime - lastTime);
 		
-		glUseProgram(shader);
-	
+		glUseProgram(shaderr);
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, Texture);
 		// Set our "myTextureSampler" sampler to user Texture Unit 0
-
 		glUniform1i(TextureID, 0);
 
-		GLuint vertexPosition_modelspaceID = glGetAttribLocation(shader, "vertexPosition_modelspace");
-		GLuint vertexUVID = glGetAttribLocation(shader, "vertexUV");
-		GLuint vertexNormal_modelspaceID = glGetAttribLocation(shader, "vertexNormal_modelspace"); 
-		
+		GLuint vertexPosition_modelspaceID = glGetAttribLocation(shaderr, "vertexPosition_modelspace");
+		GLuint vertexUVID = glGetAttribLocation(shaderr, "vertexUV");
+		GLuint vertexNormal_modelspaceID = glGetAttribLocation(shaderr, "vertexNormal_modelspace"); 
 		//Rot.y += 3.14159f/2.0f * deltaTime;
 		
 		/*
@@ -297,28 +301,28 @@ class Obj
 		}	
 		if(sp == false) Rot.y += 0;
 		*/
-		
 		glm::mat4 ScalingMatrix = glm::scale(10.0f,10.0f,10.0f);
 		//glm::mat4 RotationMatrix = eulerAngleYXZ(Rot.y,Rot.x,Rot.z);
 		glm::mat4 ProjectionMatrix = getProjectionMatrix();
 		glm::mat4 ViewMatrix = getViewMatrix();
 		glm::mat4 TranslationMatrix = glm::translate(mat4(), vec3(pos.x,pos.y,pos.z)); // A bit to the left
 		glm::mat4 ModelMatrix = TranslationMatrix * ScalingMatrix; // * TranslationMatrix * RotationMatrix * ScalingMatrix;
- 
 		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
+		GLuint MatrixID = glGetUniformLocation(shaderr, "MVP");
+		GLuint ViewMatrixID = glGetUniformLocation(shaderr, "V");
+		GLuint ModelMatrixID = glGetUniformLocation(shaderr, "M");
 		
-		GLuint MatrixID = glGetUniformLocation(shader, "MVP");
-		GLuint ViewMatrixID = glGetUniformLocation(shader, "V");
-		GLuint ModelMatrixID = glGetUniformLocation(shader, "M");
-		
-		// Send our transformation to the currently bound shader, 
+		// Send our transformation to the currently bound shaderr, 
 		// in the "MVP" uniform
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
 		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
-
+		
 		// 1rst attribute buffer : vertices
-		glEnableVertexAttribArray(0);
+		if(shader_v == 3)
+			glEnableVertexAttribArray(0);
+		else
+			glEnableVertexAttribArray(vertexPosition_modelspaceID);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 		glVertexAttribPointer(
 			vertexPosition_modelspaceID,  // The attribute we want to configure
@@ -328,9 +332,12 @@ class Obj
 			0,                            // stride
 			(void*)0                      // array buffer offset
 		);
- 
+		
 		// 2nd attribute buffer : UVs
-		glEnableVertexAttribArray(1);
+		if(shader_v == 3)
+			glEnableVertexAttribArray(1);
+		else
+			glEnableVertexAttribArray(vertexUVID);
 		glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
 		glVertexAttribPointer(
 			vertexUVID,                   // The attribute we want to configure
@@ -340,9 +347,12 @@ class Obj
 			0,                            // stride
 			(void*)0                      // array buffer offset
 		);
- 
+		
 		// 3rd attribute buffer : normals
-		glEnableVertexAttribArray(2);
+		if(shader_v == 3)
+			glEnableVertexAttribArray(2);
+		else
+			glEnableVertexAttribArray(vertexNormal_modelspaceID);
 		glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
 		glVertexAttribPointer(
 			vertexNormal_modelspaceID,    // The attribute we want to configure
@@ -354,14 +364,13 @@ class Obj
 		);
 		
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-		
+				
 		glDrawElements(
 				GL_TRIANGLES,      // mode
-				indices.size(),    // count
+				indicess.size(),    // count
 				GL_UNSIGNED_SHORT,   // type
 				(void*)0           // element array buffer offset
 			);
-			
 		lastTime = currentTime;
 	}
 	
