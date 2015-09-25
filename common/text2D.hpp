@@ -28,6 +28,7 @@ unsigned int Text2DVertexBufferID;
 unsigned int Text2DUVBufferID;
 unsigned int Text2DShaderID;
 unsigned int Text2DUniformID;
+GLuint vPos, uv;
 
 void initText2D(const char * texturePath){
 
@@ -40,7 +41,10 @@ void initText2D(const char * texturePath){
 
 	// Initialize Shader
 	Text2DShaderID = LoadShaders( "TextVertexShader.vertexshader", "TextVertexShader.fragmentshader" );
-
+	
+	vPos = glGetAttribLocation(Text2DShaderID, "vertexPosition_screenspace");
+	uv 	= glGetAttribLocation(Text2DShaderID, "vertexUV");
+	
 	// Initialize uniforms' IDs
 	Text2DUniformID = glGetUniformLocation( Text2DShaderID, "myTextureSampler" );
 
@@ -99,21 +103,27 @@ void printText2D(const char * text, int x, int y, int size){
 	glUniform1i(Text2DUniformID, 0);
 
 	// 1rst attribute buffer : vertices
-	glEnableVertexAttribArray(0);
+	if(shader_v == 3)
+		glEnableVertexAttribArray(0);
+	else
+		glEnableVertexAttribArray(vPos);
 	glBindBuffer(GL_ARRAY_BUFFER, Text2DVertexBufferID);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0 );
+	glVertexAttribPointer(vPos, 2, GL_FLOAT, GL_FALSE, 0, (void*)0 );
 
 	// 2nd attribute buffer : UVs
-	glEnableVertexAttribArray(1);
+	if(shader_v == 3)
+		glEnableVertexAttribArray(1);
+	else
+		glEnableVertexAttribArray(uv);
 	glBindBuffer(GL_ARRAY_BUFFER, Text2DUVBufferID);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0 );
+	glVertexAttribPointer(uv, 2, GL_FLOAT, GL_FALSE, 0, (void*)0 );
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Draw call
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size() );
-
+	
 	glDisable(GL_BLEND);
 
 	glDisableVertexAttribArray(0);
