@@ -5,7 +5,7 @@
 
 bool send = false, coord = false, rm = false;
 float oX = 0, oY = 0, oZ = 0;
-int ix = 0;
+int ix = 0, texID = 0;
 
 void console_update()
 {
@@ -40,7 +40,7 @@ void console_update()
 		}
 		else if(strcmp(buff, "end") == 0)
 		{
-			printf("___console_exit\n");
+			printf("__console_exit\n");
 			st = GAME;
 			c_run = false;
 		}
@@ -58,12 +58,12 @@ void console_update()
 		}
 		else if(strcmp(buff, "create-pos") == 0)
 		{
-			fscanf(f, "%f %f %f\n", &oX, &oY, &oZ);
+			fscanf(f, "%f %f %f %i\n", &oX, &oY, &oZ, &texID);
 			coord = true;
 		}
-		else if(strcmp(buff, "remove-index") == 0)
+		else if(strcmp(buff, "rm-index") == 0)
 		{
-			fscanf(f, "%f\n", &ix);
+			fscanf(f, "%i\n", &ix);
 			rm = true;	//objs.erase(objs.begin()+index);
 		}
 		}
