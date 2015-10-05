@@ -301,8 +301,8 @@ class Obj
 		}	
 		if(sp == false) Rot.y += 0;
 		*/
-		glm::mat4 ScalingMatrix = glm::scale(10.0f,10.0f,10.0f);
-		//glm::mat4 RotationMatrix = eulerAngleYXZ(Rot.y,Rot.x,Rot.z);
+		glm::mat4 ScalingMatrix = glm::scale(1.0f, 1.0f, 1.0f); //10.0f,10.0f,10.0f);
+		//glm::mat4 RotationMatrix = eulerAngleYXZ(0.0f, 0.0f, 1.0f);//Rot.y,Rot.x,Rot.z);
 		glm::mat4 ProjectionMatrix = getProjectionMatrix();
 		glm::mat4 ViewMatrix = getViewMatrix();
 		glm::mat4 TranslationMatrix = glm::translate(mat4(), vec3(pos.x,pos.y,pos.z)); // A bit to the left
@@ -371,6 +371,11 @@ class Obj
 				GL_UNSIGNED_SHORT,   // type
 				(void*)0           // element array buffer offset
 			);
+			
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+			
 		lastTime = currentTime;
 	}
 	
