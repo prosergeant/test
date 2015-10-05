@@ -67,16 +67,31 @@ target_link_libraries(ini
 	#${OPENGL_LIBRARY}
 	#${EXTRA_LIBS}
 )
-					
-set(ALL_LIBS
-	#${OPENGL_LIBRARY}
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	message("You're on Linux !")
+	set(ALL_LIBS
+	${OPENGL_LIBRARY}
 	GLFW_303
 	GLEW_190
-	opengl32
-	glu32
-	gdi32
+	ini
+	X11
+	Xxf86vm
+	Xrandr
+	pthread
+	Xi
+	Xinerama
+	Xcursor
+)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	message("You're on Windows !")
+	set(ALL_LIBS
+	${OPENGL_LIBRARY}
+	GLFW_303
+	GLEW_190
 	ini
 )
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 add_executable(main ${SOURCE_EXE})	
 
