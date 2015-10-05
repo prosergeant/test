@@ -54,9 +54,12 @@ float verticalAngle = 0.0f;
 // Initial Field of View
 float initialFoV = 45.0f;
 
+float iy;
 float speed = 3.0f; // 3 units / second
 float mouseSpeed = 0.004f;
 
+bool onGround = false;
+bool sp = false;
 
 
 void computeMatricesFromInputs(){
@@ -95,14 +98,22 @@ void computeMatricesFromInputs(){
 
 	// Up vector
 	glm::vec3 up = glm::cross( right, direction );
+	
+	
+	
+	position.y += iy * deltaTime;
+	if(position.y > 0.0f /* && onGround == false*/) { /*position.y -= speed * deltaTime;*/ iy -= 0.01f; } //1.0f * deltaTime; /*if(iy <= 0.0f) { iy = 0.0f; }*/}
+	if(position.y <= 0.0f) { position.y = 0.0f; onGround = true; }
 
 	// Move forward
 	if (glfwGetKey( window, GLFW_KEY_W ) == GLFW_PRESS){
-		position += direction * deltaTime * speed;
+		position.z += direction.z * deltaTime * speed;
+		position.x += direction.x * deltaTime * speed;
 	}
 	// Move backward
 	if (glfwGetKey( window, GLFW_KEY_S ) == GLFW_PRESS){
-		position -= direction * deltaTime * speed;
+		position.z -= direction.z * deltaTime * speed;
+		position.x -= direction.x * deltaTime * speed;
 	}
 	// Strafe right
 	if (glfwGetKey( window, GLFW_KEY_D ) == GLFW_PRESS){
@@ -113,8 +124,15 @@ void computeMatricesFromInputs(){
 		position -= right * deltaTime * speed;
 	}
 	// Move Up
-	if (glfwGetKey( window, GLFW_KEY_SPACE ) == GLFW_PRESS){
-		position += up * deltaTime * speed;
+	if (glfwGetKey( window, GLFW_KEY_SPACE ) == GLFW_PRESS && onGround == true && sp == false){
+		onGround = false;
+		sp = true;
+		iy = 3.0f; // * deltaTime; //speed * speed * speed * deltaTime;
+		//position.y += deltaTime * pow(speed, 8); // * speed * speed * speed * speed;
+		//position += up * deltaTime * speed;
+	}
+	if (glfwGetKey( window, GLFW_KEY_SPACE ) == GLFW_RELEASE && onGround == true){
+		sp = false;
 	}
 	// Move Down
 	if (glfwGetKey( window, GLFW_KEY_LEFT_CONTROL ) == GLFW_PRESS){
@@ -128,6 +146,8 @@ void computeMatricesFromInputs(){
 		}
 	}
 	
+	//position.y += iy; // * deltaTime;
+
 	/*
 	if (glfwGetKey( window, GLFW_KEY_E ) == GLFW_PRESS){
 	}
