@@ -1,4 +1,4 @@
-// v 0.0.4
+// v 0.0.6
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -25,13 +25,26 @@ GLFWwindow* window;
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/transform.hpp"
+#include <glm/gtx/euler_angles.hpp>
 using namespace glm;
 
 const int Texture_n = 3;
 
 int w = 0, h = 0, chooseTex = 0, posX = 0, posY = 0, posZ = 0, shader_v = 0; 
 int tgm = 0, tcl = 0;
-GLuint shader, Texture[Texture_n];
+GLuint shader, billShader, Texture[Texture_n];
+GLuint CameraRight_worldspace_ID, 
+		CameraUp_worldspace_ID,
+		ViewProjMatrixID,
+		BillboardPosID,
+		BillboardSizeID,
+		billboard_vertex_buffer;
+GLfloat g_vertex_buffer_data[] = { 
+		 -0.5f, -0.5f, 0.0f,
+		  0.5f, -0.5f, 0.0f,
+		 -0.5f,  0.5f, 0.0f,
+		  0.5f,  0.5f, 0.0f
+	};
 float vertAngle = 0, horAngle = 0;
 std::string model_path = "", title = "Default", texName[Texture_n], font;
 
@@ -71,6 +84,24 @@ extern "C" {
 
 int parse_ini_file(char* ini_name);
 void init();
+void billboard_draw(GLuint shader, float x, float y, float z);
+
+bool dist(int distt, glm::vec3 one)
+{
+	bool result = false;
+	int rdist = distt - distt - distt;
+	if(one.x >= distt) result = true;
+	else if(one.x <= rdist) result = true;
+	
+	if(one.y >= distt) result = true;
+	else if(one.y <= rdist) result = true;
+	
+	if(one.z >= distt) result = true;
+	else if(one.z <= rdist) result = true;
+	
+	return result;
+}
+
 
 int main()
 {
@@ -142,11 +173,24 @@ int main()
 	glDepthFunc(GL_LESS); 
 
 	glEnable(GL_CULL_FACE);
-
+	
 	GLuint VertexArrayID;
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
+	
+	billShader = LoadShaders( "Billboard.vertexshader", "Billboard.fragmentshader" );
 
+	CameraRight_worldspace_ID  = glGetUniformLocation(billShader, "CameraRight_worldspace");
+	CameraUp_worldspace_ID  = glGetUniformLocation(billShader, "CameraUp_worldspace");
+	ViewProjMatrixID = glGetUniformLocation(billShader, "VP");
+	BillboardPosID = glGetUniformLocation(billShader, "BillboardPos");
+	BillboardSizeID = glGetUniformLocation(billShader, "BillboardSize");
+	
+	
+	glGenBuffers(1, &billboard_vertex_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, billboard_vertex_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_DYNAMIC_DRAW);
+	
 	init();	
 		
 	std::vector<Obj*> objs;
@@ -225,19 +269,21 @@ int main()
 		for(oIT = objs.begin(); oIT != objs.end(); oIT++)
 		{
 			Obj *a = *oIT;
+			tcl = 0;
+			glm::vec3 distt = a->pos - position;
 
 			a->ExtractFrustum();
 
-			if(a->SphereInFrustum(a->pos.x, a->pos.y, a->pos.z, 8.0f))
+			if(a->SphereInFrustum(a->pos.x, a->pos.y, a->pos.z, 20.0f) && dist(100, distt) == false)
 			{
 				tcl++;
 				a->DrawAt(a->pos.x, a->pos.y, a->pos.z);
 			}
+			else //if(dist(100, distt))
+			{
+				billboard_draw(billShader, a->pos.x, a->pos.y, a->pos.z);
+			}
 		}
-
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
-		glDisableVertexAttribArray(2);
 
 		//char text[256];
 		sprintf(text,"%.2f ", verticalAngle );
@@ -245,8 +291,9 @@ int main()
 
 		sprintf(text,"%.2f ", horizontalAngle );
 		printText2D(text, 10, 520, 20);
-
-		sprintf(text,"tgm %i ", tgm );
+		
+		//glm::vec3 dis = objs[0]->pos - position;
+		sprintf(text,"tgm =  %f ", tgm );
 		printText2D(text, 10, 480, 20);
 
 		sprintf(text,"tcl %i ", tcl );
@@ -286,6 +333,7 @@ int main()
 			delete a;
 		}
 	glDeleteVertexArrays(1, &VertexArrayID);
+		glDeleteProgram(billShader);
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
 	return 0;
@@ -439,4 +487,42 @@ void init()
 	
 	glm::vec3 lightPos = glm::vec3(4,7,4);
 	glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
+}
+
+
+void billboard_draw(GLuint shader, float x, float y, float z)
+{
+	glUseProgram(shader);
+	
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, Texture[2]);
+			GLuint TextureID  = glGetUniformLocation(shader, "MyTextureSampler");
+	glUniform1i(TextureID, 0);
+			
+	glm::mat4 ViewProjectionMatrix = ProjectionMatrix * ViewMatrix;
+			
+	glUniform3f(CameraRight_worldspace_ID, ViewMatrix[0][0], ViewMatrix[1][0], ViewMatrix[2][0]);
+	glUniform3f(CameraUp_worldspace_ID   , ViewMatrix[0][1], ViewMatrix[1][1], ViewMatrix[2][1]);
+			
+	glUniform3f(BillboardPosID, x, y, z); // The billboard will be just above the cube
+	glUniform2f(BillboardSizeID, 1.0f, /*0.125f*/ 1.0f);     // and 1m*12cm, because it matches its 256*32 resolution
+		
+	glUniformMatrix4fv(ViewProjMatrixID, 1, GL_FALSE, &ViewProjectionMatrix[0][0]);
+
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, billboard_vertex_buffer);
+	glVertexAttribPointer(
+		0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
+		3,                  // size
+		GL_FLOAT,           // type
+		GL_FALSE,           // normalized?
+		0,                  // stride
+		(void*)0            // array buffer offset
+	);
+		
+
+	// Draw the billboard !
+	// This draws a triangle_strip which looks like a quad.
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glDisableVertexAttribArray(0);
 }
