@@ -124,10 +124,14 @@ class Obj
 	public:
 	float m;			// The mass value
 	glm::vec3 pos;			// Position in space
+	glm::vec3 aabb[8];
+	glm::vec3 bsphere_center;
 	glm::vec3 vel;			// Velocity
-	glm::vec3 force;	
+	glm::vec3 force;
+	glm::vec3 size;
 	float Rx, Ry, Rz;
 	float frustum[6][4];
+	float bsphere_radius;
 	glm::vec3 Rot;
 	std::vector<glm::vec3> vert;
 	std::vector<glm::vec2> uv;
@@ -151,6 +155,10 @@ class Obj
 		pos.x = xx;
 		pos.y = yy;
 		pos.z = zz;
+		
+		size.x = 1.0f;
+		size.y = 1.0f;
+		size.z = 1.0f;
 		/*
 		vert = vertt;
 		uv = uvv;
@@ -301,7 +309,7 @@ class Obj
 		}	
 		if(sp == false) Rot.y += 0;
 		*/
-		glm::mat4 ScalingMatrix = glm::scale(1.0f, 1.0f, 1.0f); //10.0f,10.0f,10.0f);
+		glm::mat4 ScalingMatrix = glm::scale(size.x, size.y, size.z); //1.0f, 1.0f, 1.0f); //10.0f,10.0f,10.0f);
 		//glm::mat4 RotationMatrix = eulerAngleYXZ(0.0f, 0.0f, 1.0f);//Rot.y,Rot.x,Rot.z);
 		glm::mat4 ProjectionMatrix = getProjectionMatrix();
 		glm::mat4 ViewMatrix = getViewMatrix();
@@ -515,5 +523,91 @@ class Obj
 				return false;
 		return true;
 	}
+	
+	void CreateBSphere(/**obj_type_ptr p_object*/)
+	{
+		glm::vec3 l_vector;
+		
+		//AABB creation
+		CreateAABB();
+
+		//Object center (It uses the extreme points of the AABB)
+		bsphere_center.x = (aabb[6].x + aabb[0].x)/2;
+		bsphere_center.y = (aabb[6].y + aabb[0].y)/2;
+		bsphere_center.z = (aabb[6].z + aabb[0].z)/2;
+		
+		//Object radius (It uses the extreme points of the AABB)
+		VectCreate(aabb[0], aabb[6], l_vector);
+		bsphere_radius = VectLength(l_vector)/2;
+	}
+	
+	float VectLength (glm::vec3 p_vector)
+	{
+		return (float)(sqrt(p_vector.x*p_vector.x + p_vector.y*p_vector.y + p_vector.z*p_vector.z));
+	}
+	
+	void VectCreate (glm::vec3 p_start, glm::vec3 p_end, glm::vec3 &p_vector)
+	{
+		p_vector.x = p_end.x - p_start.x;
+		p_vector.y = p_end.y - p_start.y;
+		p_vector.z = p_end.z - p_start.z;
+	}
+	
+	void CreateAABB()
+	{
+		int i;
+
+		// At first store the first vertex into the first AABB vertex
+		for (i=0; i<8; i++)
+		{
+			aabb[i].x = vert[0].x;
+			aabb[i].y = vert[0].y;
+			aabb[i].z = vert[0].z;
+		}
+
+		// Now get the 8 AABB vertex making some comparisons to get the 8 extreme vertices of the object
+		for (i=1; i<vert.size(); i++)
+		{
+			if (vert[i].x < aabb[0].x) aabb[0].x = vert[i].x;// + pos.x;
+			if (vert[i].y < aabb[0].y) aabb[0].y = vert[i].y;// + pos.y;
+			if (vert[i].z < aabb[0].z) aabb[0].z = vert[i].z;// + pos.z;
+
+			if (vert[i].x > aabb[1].x) aabb[1].x = vert[i].x;// + pos.x;
+			if (vert[i].y < aabb[1].y) aabb[1].y = vert[i].y;// + pos.y;
+			if (vert[i].z < aabb[1].z) aabb[1].z = vert[i].z;// + pos.z;
+
+			if (vert[i].x > aabb[2].x) aabb[2].x = vert[i].x;// + pos.x;
+			if (vert[i].y > aabb[2].y) aabb[2].y = vert[i].y;// + pos.y;
+			if (vert[i].z < aabb[2].z) aabb[2].z = vert[i].z;// + pos.z;
+
+			if (vert[i].x < aabb[3].x) aabb[3].x = vert[i].x;// + pos.x;
+			if (vert[i].y > aabb[3].y) aabb[3].y = vert[i].y;// + pos.y;
+			if (vert[i].z < aabb[3].z) aabb[3].z = vert[i].z;// + pos.z;
+
+			if (vert[i].x < aabb[4].x) aabb[4].x = vert[i].x;// + pos.x;
+			if (vert[i].y < aabb[4].y) aabb[4].y = vert[i].y;// + pos.y;
+			if (vert[i].z > aabb[4].z) aabb[4].z = vert[i].z;// + pos.z;
+		
+			if (vert[i].x > aabb[5].x) aabb[5].x = vert[i].x;// + pos.x;
+			if (vert[i].y < aabb[5].y) aabb[5].y = vert[i].y;// + pos.y;
+			if (vert[i].z > aabb[5].z) aabb[5].z = vert[i].z;// + pos.z;
+
+			if (vert[i].x > aabb[6].x) aabb[6].x = vert[i].x;// + pos.x;
+			if (vert[i].y > aabb[6].y) aabb[6].y = vert[i].y;// + pos.y;
+			if (vert[i].z > aabb[6].z) aabb[6].z = vert[i].z;// + pos.z;
+
+			if (vert[i].x < aabb[7].x) aabb[7].x = vert[i].x;// + pos.x;
+			if (vert[i].y > aabb[7].y) aabb[7].y = vert[i].y;// + pos.y;
+			if (vert[i].z > aabb[7].z) aabb[7].z = vert[i].z;// + pos.z;	
+			
+		}
+		
+		FOR(i, 8)
+		{
+			aabb[i] *= size;
+			aabb[i] += pos;
+		}
+	}
+
 	
 };
