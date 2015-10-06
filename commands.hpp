@@ -3,9 +3,9 @@
 #include <cstring>
 #include <vector>
 
-bool send = false, coord = false, rm = false;
-float oX = 0, oY = 0, oZ = 0;
-int ix = 0, texID = 0;
+bool send = false, coord = false, rm = false, load = false;
+float oX = 0, oY = 0, oZ = 0, sX = 0, sY = 0, sZ = 0;
+int ix = 0, texID = 0, nModel = 0;
 
 void console_update()
 {
@@ -58,7 +58,7 @@ void console_update()
 		}
 		else if(strcmp(buff, "create-pos") == 0)
 		{
-			fscanf(f, "%f %f %f %i\n", &oX, &oY, &oZ, &texID);
+			fscanf(f, "%i %f %f %f %i %f %f %f\n",&nModel, &oX, &oY, &oZ, &texID, &sX, &sY, &sZ);
 			coord = true;
 		}
 		else if(strcmp(buff, "rm-index") == 0)
