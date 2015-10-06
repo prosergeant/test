@@ -608,6 +608,49 @@ class Obj
 			aabb[i] += pos;
 		}
 	}
-
+	
+	glm::vec3 rndVec3()
+	{
+		glm::vec3 n;
+		do
+		{
+			n = glm::vec3(rand()%3-1, rand()%3-1, rand()%3-1);
+		}
+		while(VectLength(n) < 1);
+		return n;
+	}
+	
+	void CreateLand(int per)
+	{
+		int i = 0, j = 0;
+		glm::vec3 v;
+		
+		float d;
+		
+		FOR(i, per)
+		{
+			glm::vec3 n,m;
+			n = rndVec3();
+			m = rndVec3();
+			
+			FOR(j, vert.size())
+			{
+				glm::vec3& p = vert[j];
+				v = p - n;
+				d = glm::dot(n,v);
+				
+				if(d > 0)
+				{
+					p += m;
+				}
+				else
+				{
+					p -= m;
+				}
+			}
+		}
+		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+		glBufferData(GL_ARRAY_BUFFER, vert.size() * sizeof(glm::vec3), &vert[0], GL_STATIC_DRAW);
+	}
 	
 };
