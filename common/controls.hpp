@@ -55,7 +55,7 @@ float verticalAngle = 0.0f;
 float initialFoV = 45.0f;
 
 float iy;
-float speed = 3.0f; // 3 units / second
+float speed = 10.0f; // 3 units / second
 float mouseSpeed = 0.004f;
 
 bool onGround = false;
@@ -101,19 +101,22 @@ void computeMatricesFromInputs(){
 	
 	
 	
+	/**
 	position.y += iy * deltaTime;
-	if(position.y > 0.0f /* && onGround == false*/) { /*position.y -= speed * deltaTime;*/ iy -= 0.01f; } //1.0f * deltaTime; /*if(iy <= 0.0f) { iy = 0.0f; }*/}
+	if(position.y > 0.0f ) { iy -= 0.01f; } 
 	if(position.y <= 0.0f) { position.y = 0.0f; onGround = true; }
-
+	*/
 	// Move forward
 	if (glfwGetKey( window, GLFW_KEY_W ) == GLFW_PRESS){
-		position.z += direction.z * deltaTime * speed;
-		position.x += direction.x * deltaTime * speed;
+		///position.z += direction.z * deltaTime * speed;
+		///position.x += direction.x * deltaTime * speed;
+		position += direction * deltaTime * speed;
 	}
 	// Move backward
 	if (glfwGetKey( window, GLFW_KEY_S ) == GLFW_PRESS){
-		position.z -= direction.z * deltaTime * speed;
-		position.x -= direction.x * deltaTime * speed;
+		///position.z -= direction.z * deltaTime * speed;
+		///position.x -= direction.x * deltaTime * speed;
+		position -= direction * deltaTime * speed;
 	}
 	// Strafe right
 	if (glfwGetKey( window, GLFW_KEY_D ) == GLFW_PRESS){
@@ -124,12 +127,12 @@ void computeMatricesFromInputs(){
 		position -= right * deltaTime * speed;
 	}
 	// Move Up
-	if (glfwGetKey( window, GLFW_KEY_SPACE ) == GLFW_PRESS && onGround == true && sp == false){
-		onGround = false;
-		sp = true;
-		iy = 3.0f; // * deltaTime; //speed * speed * speed * deltaTime;
+	if (glfwGetKey( window, GLFW_KEY_SPACE ) == GLFW_PRESS/** && onGround == true && sp == false*/){
+		///onGround = false;
+		///sp = true;
+		///iy = 3.0f;
 		//position.y += deltaTime * pow(speed, 8); // * speed * speed * speed * speed;
-		//position += up * deltaTime * speed;
+		position += up * deltaTime * speed;
 	}
 	if (glfwGetKey( window, GLFW_KEY_SPACE ) == GLFW_RELEASE && onGround == true){
 		sp = false;
@@ -138,7 +141,15 @@ void computeMatricesFromInputs(){
 	if (glfwGetKey( window, GLFW_KEY_LEFT_CONTROL ) == GLFW_PRESS){
 		position -= up * deltaTime * speed;
 	}
-
+	
+	if (glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) == GLFW_PRESS){
+		speed = 90.0f;
+	}
+	
+	if (glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) == GLFW_RELEASE){
+		speed = 10.0f;
+	}
+	
 	if (glfwGetKey( window, GLFW_KEY_GRAVE_ACCENT ) == GLFW_PRESS){
 		if(c_on){
 			st = CONSOLE;
@@ -158,7 +169,7 @@ void computeMatricesFromInputs(){
 	float FoV = initialFoV;// - 5 * glfwGetMouseWheel(); // Now GLFW 3 requires setting up a callback for this. It's a bit too complicated for this beginner's tutorial, so it's disabled instead.
 
 	// Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-	ProjectionMatrix = glm::perspective(FoV, 16.0f / 9.0f, 0.1f, 1000.0f);
+	ProjectionMatrix = glm::perspective(FoV, 16.0f / 9.0f, 0.1f, 10000.0f);
 	// Camera matrix
 	ViewMatrix       = glm::lookAt(
 								position,           // Camera is here
