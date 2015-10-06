@@ -1,8 +1,10 @@
-// v 0.0.6
+// v 0.0.7
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
 #include <string>
+#include <stdexcept>
+#include <exception>
 #include <iostream>
 
 //#define DEBUG
@@ -26,9 +28,10 @@ GLFWwindow* window;
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/transform.hpp"
 #include <glm/gtx/euler_angles.hpp>
-using namespace glm;
+//using namespace glm;
 
 const int Texture_n = 3;
+const int Models_n = 2;
 
 int w = 0, h = 0, chooseTex = 0, posX = 0, posY = 0, posZ = 0, shader_v = 0; 
 int tgm = 0, tcl = 0;
@@ -52,6 +55,7 @@ std::vector<std::vector<glm::vec3> > vertices;
 std::vector<std::vector<glm::vec2> > uvs;
 std::vector<std::vector<glm::vec3> > normals;
 std::vector<std::vector<unsigned short> > indices;
+std::vector<std::string> model_p;
 
 bool c_run = false;
 bool c_on = true;
@@ -202,6 +206,8 @@ int main()
 			normals[0],  //indexed_normals,
 			indices[0],
 			Texture[0])); //texName[chooseTex]));
+	
+	//objs[0]->CreateBSphere(); //CreateAABB();
 
 	position = glm::vec3(posX, posY, posZ);
 	verticalAngle = vertAngle;
@@ -241,11 +247,13 @@ int main()
 		if(coord == true)
 		{
 			objs.push_back(	new Obj(oX, oY, oZ,
-			vertices[0],
-			uvs[0],
-			normals[0],
-			indices[0],
+			vertices[nModel],
+			uvs[nModel],
+			normals[nModel],
+			indices[nModel],
 			Texture[texID])); //texName[chooseTex]);
+			objs[objs.size() - 1]->size = glm::vec3(sX,sY,sZ);
+			
 			coord = false;
 		}
 
@@ -262,29 +270,71 @@ int main()
 
 		if(rm == true)
 		{
-			objs.erase(objs.begin()+ix);
+			try
+			{
+				if(objs.empty())
+					throw std::range_error("objs is empty");
+				
+				if(ix >= objs.size())
+					throw std::range_error("objs out of range");
+				
+				objs.erase(objs.begin()+ix);
+				printf("%i index removed from %i\n", ix, objs.size());
+			}
+			catch(const std::out_of_range& e)
+			{
+				std::cout << "Trying to remove " << ix << " from " << objs.size() << std::endl;
+				std::cout << "Objs vector - out of range(" << e.what() << ")" << std::endl;
+			}
+			
+			catch(const std::range_error& e)
+			{
+				std::cout << "Trying to remove " << ix << " from " << objs.size() << std::endl;
+				std::cout << "Objs vector - out of range(" << e.what() << ")" << std::endl;
+			}
+			
 			rm = false;
 		}
-
+		
+		tcl = 0;
+		
 		for(oIT = objs.begin(); oIT != objs.end(); oIT++)
 		{
 			Obj *a = *oIT;
-			tcl = 0;
+			
 			glm::vec3 distt = a->pos - position;
 
 			a->ExtractFrustum();
+			a->CreateBSphere();
 
-			if(a->SphereInFrustum(a->pos.x, a->pos.y, a->pos.z, 20.0f) && dist(100, distt) == false)
+			if(a->SphereInFrustum(a->pos.x, a->pos.y, a->pos.z, a->bsphere_radius) && dist(a->bsphere_radius + 1000, distt) == false)
 			{
 				tcl++;
 				a->DrawAt(a->pos.x, a->pos.y, a->pos.z);
+				
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+					billboard_draw(billShader,a->aabb[0].x,a->aabb[0].y,a->aabb[0].z);
+					billboard_draw(billShader,a->aabb[1].x,a->aabb[1].y,a->aabb[1].z);
+					billboard_draw(billShader,a->aabb[2].x,a->aabb[2].y,a->aabb[2].z);
+					billboard_draw(billShader,a->aabb[3].x,a->aabb[3].y,a->aabb[3].z);
+					billboard_draw(billShader,a->aabb[4].x,a->aabb[4].y,a->aabb[4].z);
+					billboard_draw(billShader,a->aabb[5].x,a->aabb[5].y,a->aabb[5].z);
+					billboard_draw(billShader,a->aabb[6].x,a->aabb[6].y,a->aabb[6].z);
+					billboard_draw(billShader,a->aabb[7].x,a->aabb[7].y,a->aabb[7].z);				
+				glDisable(GL_BLEND);
 			}
-			else //if(dist(100, distt))
+			else
 			{
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 				billboard_draw(billShader, a->pos.x, a->pos.y, a->pos.z);
+				glDisable(GL_BLEND);
 			}
 		}
-
+		
+		
+		
 		//char text[256];
 		sprintf(text,"%.2f ", verticalAngle );
 		printText2D(text, 10, 560, 20);
@@ -293,7 +343,7 @@ int main()
 		printText2D(text, 10, 520, 20);
 		
 		//glm::vec3 dis = objs[0]->pos - position;
-		sprintf(text,"tgm =  %f ", tgm );
+		sprintf(text,"tgm %i ", tgm );
 		printText2D(text, 10, 480, 20);
 
 		sprintf(text,"tcl %i ", tcl );
@@ -371,6 +421,14 @@ int parse_ini_file(char * ini_name)
 	
 	path = const_cast<char*>(iniparser_getstring(ini, "Level:model", NULL));
 	model_path = path;
+	model_p.push_back(model_path);
+	#ifdef DEBUG
+	printf("path = %s\nmodel_path = %s\n", path, model_path.c_str());
+	#endif
+	
+	path = const_cast<char*>(iniparser_getstring(ini, "Level:model2", NULL));
+	model_path = path;
+	model_p.push_back(model_path);
 	#ifdef DEBUG
 	printf("path = %s\nmodel_path = %s\n", path, model_path.c_str());
 	#endif
@@ -463,20 +521,22 @@ void init()
 	indexVBO(vertices_, uvs_, normals_, indicess, indexed_vertices, indexed_uvs, indexed_normals);
 	*/
 	
+	FOR(i, model_p.size()){
 	std::vector<unsigned short> indicess;
 	std::vector<glm::vec3> indexed_vertices;
 	std::vector<glm::vec2> indexed_uvs;
 	std::vector<glm::vec3> indexed_normals;
 	
-	loadOBJ(model_path.c_str(), indexed_vertices, indexed_uvs, indexed_normals, indicess);
+	loadOBJ(/**model_path.c_str()*/model_p[i].c_str(), indexed_vertices, indexed_uvs, indexed_normals, indicess);
 	
 	vertices.push_back(indexed_vertices);
 	uvs.push_back(indexed_uvs);
 	normals.push_back(indexed_normals);
 	indices.push_back(indicess);
+	}
 	
 	shader = LoadShaders( "StandardShading.vertexshader", "StandardShading.fragmentshader" );
-
+	
 	FOR(i, Texture_n)
 	{
 		Texture[i] = loadDDS(texName[i].c_str());
@@ -520,9 +580,6 @@ void billboard_draw(GLuint shader, float x, float y, float z)
 		(void*)0            // array buffer offset
 	);
 		
-
-	// Draw the billboard !
-	// This draws a triangle_strip which looks like a quad.
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glDisableVertexAttribArray(0);
 }
