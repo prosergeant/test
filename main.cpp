@@ -1,6 +1,8 @@
 // v 0.0.7
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <cstdlib>
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -28,7 +30,7 @@ GLFWwindow* window;
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/transform.hpp"
 #include <glm/gtx/euler_angles.hpp>
-//using namespace glm;
+
 
 const int Texture_n = 3;
 const int Models_n = 2;
@@ -109,6 +111,7 @@ bool dist(int distt, glm::vec3 one)
 
 int main()
 {
+	srand(time (0));
 	// Initialise GLFW
 	if( !glfwInit() )
 	{
@@ -167,6 +170,7 @@ int main()
 
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 	glfwSetCursorPos(window, w/2, h/2);
+	glfwSetScrollCallback(window, scroll_callback);
 
 	
 
@@ -207,7 +211,23 @@ int main()
 			indices[0],
 			Texture[0])); //texName[chooseTex]));
 	
-	//objs[0]->CreateBSphere(); //CreateAABB();
+	objs[0]->CreateLand(3000); //CreateAABB();
+	
+	for(int i = 1; i <= 10; i++)
+	{
+		objs.push_back(new Obj(rand()%3000-1000, rand()%3000-1000, rand()%3000-1000,
+						vertices[0],
+						uvs[0],
+						normals[0],
+						indices[0],
+						Texture[0]));
+		objs[i]->CreateLand(3000);
+		objs[i]->size /= 2;
+	}
+	
+	//objs[0]->vert[0].x += 500.0f;
+	//objs[0]->vert[0].y += 500.0f;
+	//objs[0]->vert[0].z += 500.0f;
 
 	position = glm::vec3(posX, posY, posZ);
 	verticalAngle = vertAngle;
@@ -307,11 +327,12 @@ int main()
 			a->ExtractFrustum();
 			a->CreateBSphere();
 
-			if(a->SphereInFrustum(a->pos.x, a->pos.y, a->pos.z, a->bsphere_radius) && dist(a->bsphere_radius + 1000, distt) == false)
+			if(a->SphereInFrustum(a->pos.x, a->pos.y, a->pos.z, a->bsphere_radius) && dist(a->bsphere_radius + 10000, distt) == false)
 			{
 				tcl++;
 				a->DrawAt(a->pos.x, a->pos.y, a->pos.z);
 				
+				/**
 				glEnable(GL_BLEND);
 				glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 					billboard_draw(billShader,a->aabb[0].x,a->aabb[0].y,a->aabb[0].z);
@@ -323,6 +344,9 @@ int main()
 					billboard_draw(billShader,a->aabb[6].x,a->aabb[6].y,a->aabb[6].z);
 					billboard_draw(billShader,a->aabb[7].x,a->aabb[7].y,a->aabb[7].z);				
 				glDisable(GL_BLEND);
+				*/
+				
+				
 			}
 			else
 			{
@@ -358,13 +382,16 @@ int main()
 		sprintf(text,"pZ %.2f ", position.z);
 		printText2D(text, 150, 480, 20);
 		
+		sprintf(text,"speed %.2f ", speed);
+		printText2D(text, 150, 440, 20);
+		
 		#ifndef DEBUG
 		double currentTime = glfwGetTime();
 		nbFrames++;
 		if ( currentTime - lastTime >= 1.0 ){ // If last prinf() was more than 1sec ago
 			// printf and reset
-			//sprintf(text, "%.2f ", 1000.0/double(nbFrames));
-			//printText2D(text, 10, 480, 20);
+			// sprintf(text, "%.2f ", 1000.0/double(nbFrames));
+			// printText2D(text, 10, 480, 20);
 			nbFrames = 0;
 			lastTime += 1.0;
 		}
