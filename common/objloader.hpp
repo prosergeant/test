@@ -41,7 +41,6 @@ bool loadAssImp(
 // - More secure. Change another line and you can inject code.
 // - Loading from memory, stream, etc
 
-
 bool loadOBJ(
 	const char * path, 
 	std::vector<glm::vec3> & out_vertices, 
@@ -56,9 +55,9 @@ bool loadOBJ(
 	std::vector<glm::vec2> temp_uvs;
 	std::vector<glm::vec3> temp_normals;
 
-
 	FILE * file = fopen(path, "r");
 	if( file == NULL ){
+		throw 2;
 		printf("Impossible to open the file ! Are you in the right path ? See Tutorial 1 for details\n");
 		getchar();
 		return false;
@@ -69,9 +68,10 @@ bool loadOBJ(
 		char lineHeader[128];
 		// read the first word of the line
 		int res = fscanf(file, "%s", lineHeader);
-		if (res == EOF)
+		if (res == EOF){
 			break; // EOF = End Of File. Quit the loop.
-
+		}
+		
 		// else : parse lineHeader
 		
 		if ( strcmp( lineHeader, "v" ) == 0 ){
