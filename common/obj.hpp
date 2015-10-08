@@ -340,6 +340,7 @@ class Obj
 			0,                            // stride
 			(void*)0                      // array buffer offset
 		);
+		///glDrawArrays(GL_QUADS, 0, vert.size());
 		
 		// 2nd attribute buffer : UVs
 		if(shader_v == 3)
@@ -372,7 +373,10 @@ class Obj
 		);
 		
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-				
+			
+		/**
+		
+		*/
 		glDrawElements(
 				GL_TRIANGLES,      // mode
 				indicess.size(),    // count
@@ -602,7 +606,7 @@ class Obj
 			
 		}
 		
-		FOR(i, 8)
+		FOR(8)
 		{
 			aabb[i] *= size;
 			aabb[i] += pos;
@@ -622,18 +626,18 @@ class Obj
 	
 	void CreateLand(int per)
 	{
-		int i = 0, j = 0;
+		int j = 0;
 		glm::vec3 v;
 		
 		float d;
 		
-		FOR(i, per)
-		{
+		FOR(per)
+		{ 
 			glm::vec3 n,m;
 			n = rndVec3();
 			m = rndVec3();
 			
-			FOR(j, vert.size())
+			FOR_j(vert.size())
 			{
 				glm::vec3& p = vert[j];
 				v = p - n;
@@ -654,3 +658,348 @@ class Obj
 	}
 	
 };
+
+void MapCubeToSphere( glm::vec3& vPosition )
+{
+    float x2 = vPosition.x * vPosition.x;
+    float y2 = vPosition.y * vPosition.y;
+    float z2 = vPosition.z * vPosition.z;
+
+    vPosition.x = vPosition.x * sqrt( 1.0f - ( y2 * 0.5f ) - ( z2 * 0.5f ) + ( (y2 * z2) / 3.0f ) );
+    vPosition.y = vPosition.y * sqrt( 1.0f - ( z2 * 0.5f ) - ( x2 * 0.5f ) + ( (z2 * x2) / 3.0f ) );
+    vPosition.z = vPosition.z * sqrt( 1.0f - ( x2 * 0.5f ) - ( y2 * 0.5f ) + ( (x2 * y2) / 3.0f ) );
+}
+
+struct cube
+{
+	vector<glm::vec3> st_vert;
+	vector<glm::vec2> st_uv;
+	vector<glm::vec3> st_norm;
+	vector<unsigned short> st_indices;
+	
+	bool operator+=( cube& that) {
+		FOR(st_vert.size())
+		{
+			if(that.st_vert.size() > this->st_vert.size())
+				this->st_vert.reserve(that.st_vert.size());
+			this->st_vert[i] += that.st_vert[i];
+		}
+		FOR(st_uv.size())
+		{
+			if(that.st_uv.size() > this->st_uv.size())
+				this->st_uv.reserve(that.st_uv.size());
+			this->st_uv[i] += that.st_uv[i];
+		}
+		FOR(st_norm.size())
+		{
+			if(that.st_norm.size() > this->st_norm.size())
+				this->st_norm.reserve(that.st_norm.size());
+			this->st_norm[i] += that.st_norm[i];
+		}
+		FOR(that.st_indices.size())
+		{
+			if(that.st_indices.size() > this->st_indices.size())
+				this->st_indices.reserve(that.st_indices.size());
+			this->st_indices[i] += that.st_indices[i];
+		}
+		
+		return this;
+		//return memcmp((void*)this, (void*)&that, sizeof(PackedVertex))>0;
+	};
+	
+};
+
+cube CreatePlane(float radius, int s) //, int width, int height)
+													/**
+													std::vector<glm::vec3>& vert,
+													std::vector<glm::vec2>& uv,
+													std::vector<glm::vec3>& norm,
+													std::vector<unsigned short>& indis
+													)*/
+{
+	glm::vec3 vMinPosition( -1.0f, -1.0f, -1.0f );
+	
+	int width, height;
+	width = height = s;
+	
+	std::vector<glm::vec3> vert(width*height);
+	std::vector<glm::vec2> uv(width*height);
+	std::vector<glm::vec3> norm(width*height);
+	//std::vector<unsigned short> indis;
+	cube cub;
+	
+	///vert.reserve(width*height);
+	///norm.reserve(width*height);
+	///uv.reserve(width*height);
+	
+	for ( int y = 0; y < height; ++y )
+	{
+		for ( int x = 0; x < width; ++x )
+		{
+			glm::vec3 vPosition = vMinPosition;
+			vPosition.x += (float)x / (float)(width-1) * 2.0f; // Умножить на 2.0f для переноса позиции с -1 на +1
+			vPosition.y += (float)y / (float)(height-1) * 2.0f; // Умножить на 2.0f для переноса позиции с -1 на +1
+
+			// Проекция позиции сетки на позицию сферы
+			MapCubeToSphere( vPosition );
+
+			// Нормаль - всего лишь вектор из центра сферы.
+			glm::vec3 vNormal = glm::normalize(vPosition); //vPosition.Normal();
+
+			// Экструдировать сферу по её радиусу
+			vPosition *= radius;
+
+			// Назначит в буффер вершин
+			/*pVertexBuffer*/vert[ y * width + x ]/*.Position*/ = vPosition;
+
+			/*pVertexBuffer*/norm[ y * width + x ]/*.Normal*/ = vNormal;
+		}
+	}
+	
+	for ( int j = 0; j < height; ++j )
+	{
+		for ( int i = 0; i < width; ++i )
+		{
+			uv[  j * width + i ].x = (float)i / (float)(height - 1);
+			uv[  j * width + i ].y = (float)j / (float)(width - 1);
+		}
+	}
+	
+	/*
+	for(int i = 0; i < vert.size() * 3; i += 3)
+	{
+		glm::vec3 n = (glm::cross( vert[i+1] - vert[i], vert[i+2] - vert[i] ));
+		float sin_alpha = glm::length(n) / (glm::length(vert[i+1] - vert[i]) * glm::length(vert[i+2] - vert[i]));
+		glm::vec3 normal = glm::normalize(n) * asin(sin_alpha);
+		glm::vec3 norm1 = (dot(normal,position) < 0.0) ? normal : -normal;
+		norm.push_back(norm1);
+		//norm.push_back(normal);
+		//norm.push_back(normal);
+	}
+	*/
+	
+	FOR(vert.size())
+	{
+		vert[i] = -vert[i];
+	}
+	
+	cub.st_vert = vert;
+	cub.st_uv = uv;
+	cub.st_norm = norm;
+
+	
+	
+	for(int i = 0; i < cub.st_vert.size()-s; i++)
+	{
+		static int j = 1;
+		static int k = s-1;
+		if(i == k) { k += s; j++; continue; }
+
+		cub.st_indices.push_back(i);
+		cub.st_indices.push_back(i+1);
+		cub.st_indices.push_back(i+s);
+		
+		cub.st_indices.push_back(j);
+		cub.st_indices.push_back(j+s);
+		cub.st_indices.push_back(j+s-1);
+		printf("Loading... %.1f%\n", (float)i*100.0f/(float)cub.st_vert.size());
+		j++;
+	}
+	
+	return cub;
+}
+
+cube CreateQuad(glm::vec3 origin, glm::vec3 w, glm::vec3 len)
+{
+	cube poly;
+	
+	poly.st_vert.push_back(origin);
+	poly.st_vert.push_back(origin + len);
+	poly.st_vert.push_back(origin + len + w);
+	poly.st_vert.push_back(origin + w);
+	
+	FOR(poly.st_vert.size())
+	{
+		glm::vec3 normal = glm::normalize(poly.st_vert[i]);
+		poly.st_norm.push_back(normal);
+	}
+	
+	poly.st_indices.push_back(0);
+	poly.st_indices.push_back(1);
+	poly.st_indices.push_back(2);
+	
+	poly.st_indices.push_back(0);
+	poly.st_indices.push_back(2);
+	poly.st_indices.push_back(3);
+	
+	
+	FOR(poly.st_vert.size())
+	{
+		poly.st_uv.push_back(glm::vec2(rand()%2, rand()%2));
+	}
+	
+	return poly;
+}
+
+cube CreateCube(glm::vec3 width, glm::vec3 length, glm::vec3 height)
+{
+	glm::vec3 temp;
+	temp.x = -width.x * 0.5f;
+	temp.y = -width.y * 0.5f;
+	temp.z = -width.z * 0.5f;
+	
+	glm::vec3 corner0 = temp;
+	
+	temp.x = length.x * 0.5f;
+	temp.y = length.y * 0.5f;
+	temp.z = length.z * 0.5f;
+	
+	corner0 -= length;
+	
+	temp.x = height.x * 0.5f;
+	temp.y = height.y * 0.5f;
+	temp.z = height.z * 0.5f;
+	
+	corner0 -= height;
+	
+	temp.x = width.x * 0.5f;
+	temp.y = width.y * 0.5f;
+	temp.z = width.z * 0.5f;
+	
+	glm::vec3 corner1 = width;
+	
+	temp.x = length.x * 0.5f;
+	temp.y = length.y * 0.5f;
+	temp.z = length.z * 0.5f;
+	
+	corner1 += length;
+	
+	temp.x = height.x * 0.5f;
+	temp.y = height.y * 0.5f;
+	temp.z = height.z * 0.5f;
+
+	corner1 += height;
+	
+	//glm::vec3 corner0 = -width.x*0.5f - length*0.5f - height*0.5f;
+    //glm::vec3 corner1 = width*0.5f + length*0.5f + height*0.5f;
+
+    cube combine[6]; // = new CombineInstance[6];
+    combine[0] = CreateQuad(corner0, length, width);
+    combine[1] = CreateQuad(corner0, width, height);
+    combine[2] = CreateQuad(corner0, height, length);
+    combine[3] = CreateQuad(corner1, -width, -length);
+    combine[4] = CreateQuad(corner1, -height, -width);
+    combine[5] = CreateQuad(corner1, -length, -height);
+	
+	/*
+	for(int i = 1; i < 6; i++)
+	{
+		combine[0] += combine[i];  //<- тут надо индексы складывать
+	}
+	*/
+	
+	for(int i = 1; i < 6; i++)
+	{
+		for(int j = 0; j < combine[i].st_indices.size(); j++)
+		{
+			combine[0].st_indices.push_back(combine[i].st_indices[j]);
+		}
+		
+		for(int j = 0; j < combine[i].st_vert.size(); j++)
+		{
+			combine[0].st_vert.push_back(combine[i].st_vert[j]);
+		}
+		
+		for(int j = 0; j < combine[i].st_uv.size(); j++)
+		{
+			combine[0].st_uv.push_back(combine[i].st_uv[j]);
+		}
+		
+		for(int j = 0; j < combine[i].st_norm.size(); j++)
+		{
+			combine[0].st_norm.push_back(combine[i].st_norm[j]);
+		}
+	}
+	
+	/*
+	vector<glm::vec3> t_vert, t_norm;
+	vector<glm::vec2> t_uv;
+	
+	indexVBO(combine[0].st_vert,
+			 combine[0].st_uv,
+			 combine[0].st_norm,
+			 combine[0].st_indices,
+			 t_vert,
+			 t_uv,
+			 t_norm);
+	combine[0].st_vert = t_vert;
+	combine[0].st_uv = t_uv;
+	combine[0].st_norm = t_norm;
+	*/
+	
+	return combine[0];
+}
+
+cube CreateOcto(float radius)
+{
+	cube cub;
+	// Верх
+    glm::vec3 v[6];
+	v[0] = glm::vec3(0.0f, -radius, 0.0f);
+    // Многоугольник посередине
+    v[1] = glm::vec3(-radius, 0.0f, 0.0f);
+    v[2] = glm::vec3(0.0f, 0.0f, -radius);
+    v[3] = glm::vec3(+radius, 0.0f, 0.0f);
+    v[4] = glm::vec3(0.0f, 0.0f, +radius);
+    // Низ
+    v[5] = glm::vec3(0.0f, radius, 0.0f);
+	
+	FOR(6)
+	{
+		cub.st_vert.push_back(v[i]);
+	}
+	
+	FOR(cub.st_vert.size())
+	{
+		cub.st_norm.push_back(glm::normalize(cub.st_vert[i]));
+	}
+	
+	FOR(cub.st_vert.size())
+	{
+		cub.st_uv.push_back(glm::vec2(rand()%2, rand()%2));
+	}
+	
+	cub.st_indices.push_back(0);
+	cub.st_indices.push_back(1);
+	cub.st_indices.push_back(2);
+	
+	cub.st_indices.push_back(0);
+	cub.st_indices.push_back(2);
+	cub.st_indices.push_back(3);
+	
+	cub.st_indices.push_back(0);
+	cub.st_indices.push_back(3);
+	cub.st_indices.push_back(4);
+	
+	cub.st_indices.push_back(0);
+	cub.st_indices.push_back(4);
+	cub.st_indices.push_back(1);
+	
+	cub.st_indices.push_back(5);
+	cub.st_indices.push_back(2);
+	cub.st_indices.push_back(1);
+	
+	cub.st_indices.push_back(5);
+	cub.st_indices.push_back(3);
+	cub.st_indices.push_back(2);
+	
+	cub.st_indices.push_back(5);
+	cub.st_indices.push_back(4);
+	cub.st_indices.push_back(3);
+	
+	cub.st_indices.push_back(5);
+	cub.st_indices.push_back(1);
+	cub.st_indices.push_back(4);
+	
+    return cub;
+}
