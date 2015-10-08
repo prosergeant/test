@@ -12,7 +12,10 @@
 //#define DEBUG
 //#define DEBUG_FRAMES
 
-#define FOR(i, a) for(i = 0; i < a; i++)
+#define FOR(a) for(int i = 0; i < a; i++)
+#define FOR_j(a) for(int j = 0; j < a; j++)
+#define FOR_d(j, a) for(j = 0; j < a; j++)
+#define FOR_s(q,w) for(int i = q; i < w; i++)
 
 // Include GLEW
 #include <GL/glew.h>
@@ -180,7 +183,7 @@ int main()
 
 	glDepthFunc(GL_LESS); 
 
-	glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE); // нужно отключить при рисовании планеты
 	
 	GLuint VertexArrayID;
 	glGenVertexArrays(1, &VertexArrayID);
@@ -213,6 +216,7 @@ int main()
 	
 	objs[0]->CreateLand(3000); //CreateAABB();
 	
+	/**
 	for(int i = 1; i <= 10; i++)
 	{
 		objs.push_back(new Obj(rand()%3000-1000, rand()%3000-1000, rand()%3000-1000,
@@ -224,11 +228,58 @@ int main()
 		objs[i]->CreateLand(3000);
 		objs[i]->size /= 2;
 	}
-	
-	//objs[0]->vert[0].x += 500.0f;
-	//objs[0]->vert[0].y += 500.0f;
-	//objs[0]->vert[0].z += 500.0f;
+	*/	
 
+	
+	cube cub;
+	cub = CreatePlane(100.0f, 20);
+	
+	{
+	ofstream f;
+	f.open("zzz2.obj");
+	
+	FOR(cub.st_vert.size())
+	{
+		f << "v ";
+		f << cub.st_vert.at(i).x << " " << cub.st_vert.at(i).y << " " << cub.st_vert.at(i).z << endl;
+	}
+	
+	FOR(cub.st_uv.size())
+	{
+		f << "vt ";
+		f << cub.st_uv.at(i).x << " " << cub.st_uv.at(i).y << endl;
+	}
+	
+	FOR(cub.st_norm.size())
+	{
+		f << "vn ";
+		f << cub.st_norm.at(i).x << " " << cub.st_norm.at(i).y << " " << cub.st_norm.at(i).z << endl;
+	}
+	
+	
+	int i = 0;
+		do
+		{
+		f << "f ";
+		f << cub.st_indices.at(i)   << "/" << cub.st_indices.at(i+1) << "/" << cub.st_indices.at(i+2) << " "; //<< endl;
+		f << cub.st_indices.at(i+3) << "/" << cub.st_indices.at(i+4) << "/" << cub.st_indices.at(i+5) << " ";
+		f << cub.st_indices.at(i+6) << "/" << cub.st_indices.at(i+7) << "/" << cub.st_indices.at(i+8) << endl;
+		i += 9;
+		}while(i+9 < cub.st_indices.size());
+
+	
+	f.close();
+	}
+	
+
+	objs.push_back(new Obj(300.0f, 0.0f, 300.0f,
+					cub.st_vert,
+					cub.st_uv,
+					cub.st_norm,
+					cub.st_indices,
+					Texture[0]));		
+	
+	
 	position = glm::vec3(posX, posY, posZ);
 	verticalAngle = vertAngle;
 	horizontalAngle = horAngle;
@@ -241,7 +292,6 @@ int main()
 
 	do{
 		
-		// Measure speed
 		#ifdef DEBUG
 		#ifdef DUBUG_FRAMES
 		double currentTime = glfwGetTime();
@@ -266,15 +316,21 @@ int main()
 
 		if(coord == true)
 		{
-			objs.push_back(	new Obj(oX, oY, oZ,
-			vertices[nModel],
-			uvs[nModel],
-			normals[nModel],
-			indices[nModel],
-			Texture[texID])); //texName[chooseTex]);
-			objs[objs.size() - 1]->size = glm::vec3(sX,sY,sZ);
-			
 			coord = false;
+			try
+			{
+				objs.push_back(	new Obj(oX, oY, oZ,
+				vertices[nModel],
+				uvs[nModel],
+				normals[nModel],
+				indices[nModel],
+				Texture[texID])); //texName[chooseTex]);
+				objs[objs.size() - 1]->size = glm::vec3(sX,sY,sZ);
+			}
+			catch(const std::out_of_range& e)
+			{
+				std::cout << e.what() << std::endl;
+			}
 		}
 
 		if(send == true)
@@ -317,7 +373,6 @@ int main()
 		}
 		
 		tcl = 0;
-		
 		for(oIT = objs.begin(); oIT != objs.end(); oIT++)
 		{
 			Obj *a = *oIT;
@@ -332,21 +387,13 @@ int main()
 				tcl++;
 				a->DrawAt(a->pos.x, a->pos.y, a->pos.z);
 				
-				/**
 				glEnable(GL_BLEND);
 				glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-					billboard_draw(billShader,a->aabb[0].x,a->aabb[0].y,a->aabb[0].z);
-					billboard_draw(billShader,a->aabb[1].x,a->aabb[1].y,a->aabb[1].z);
-					billboard_draw(billShader,a->aabb[2].x,a->aabb[2].y,a->aabb[2].z);
-					billboard_draw(billShader,a->aabb[3].x,a->aabb[3].y,a->aabb[3].z);
-					billboard_draw(billShader,a->aabb[4].x,a->aabb[4].y,a->aabb[4].z);
-					billboard_draw(billShader,a->aabb[5].x,a->aabb[5].y,a->aabb[5].z);
-					billboard_draw(billShader,a->aabb[6].x,a->aabb[6].y,a->aabb[6].z);
-					billboard_draw(billShader,a->aabb[7].x,a->aabb[7].y,a->aabb[7].z);				
+				FOR(8)
+				{
+					billboard_draw(billShader,a->aabb[i].x,a->aabb[i].y,a->aabb[i].z);
+				}
 				glDisable(GL_BLEND);
-				*/
-				
-				
 			}
 			else
 			{
@@ -356,8 +403,6 @@ int main()
 				glDisable(GL_BLEND);
 			}
 		}
-		
-		
 		
 		//char text[256];
 		sprintf(text,"%.2f ", verticalAngle );
@@ -398,7 +443,8 @@ int main()
 
 			sprintf(text, "%.0f ", 1000.0/double(nbFrames));
 			printText2D(text, 10, 480, 20);
-		#endif		
+		#endif	
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	} 
@@ -534,7 +580,6 @@ int parse_ini_file(char * ini_name)
 
 void init()
 {
-	int i = 0;
 	/*
 	std::vector<glm::vec3> vertices_;
 	std::vector<glm::vec2> uvs_;
@@ -547,24 +592,30 @@ void init()
 	std::vector<glm::vec3> indexed_normals;
 	indexVBO(vertices_, uvs_, normals_, indicess, indexed_vertices, indexed_uvs, indexed_normals);
 	*/
-	
-	FOR(i, model_p.size()){
-	std::vector<unsigned short> indicess;
-	std::vector<glm::vec3> indexed_vertices;
-	std::vector<glm::vec2> indexed_uvs;
-	std::vector<glm::vec3> indexed_normals;
-	
-	loadOBJ(/**model_path.c_str()*/model_p[i].c_str(), indexed_vertices, indexed_uvs, indexed_normals, indicess);
-	
-	vertices.push_back(indexed_vertices);
-	uvs.push_back(indexed_uvs);
-	normals.push_back(indexed_normals);
-	indices.push_back(indicess);
+	try
+	{
+		FOR(model_p.size()){
+		std::vector<unsigned short> indicess;
+		std::vector<glm::vec3> indexed_vertices;
+		std::vector<glm::vec2> indexed_uvs;
+		std::vector<glm::vec3> indexed_normals;
+		
+		loadOBJ(/**model_path.c_str()*/model_p[i].c_str(), indexed_vertices, indexed_uvs, indexed_normals, indicess);
+		
+		vertices.push_back(indexed_vertices);
+		uvs.push_back(indexed_uvs);
+		normals.push_back(indexed_normals);
+		indices.push_back(indicess);
+		}
+	}
+	catch(exception& e)
+	{
+		std::cout << e.what() << endl;
 	}
 	
 	shader = LoadShaders( "StandardShading.vertexshader", "StandardShading.fragmentshader" );
 	
-	FOR(i, Texture_n)
+	FOR(Texture_n)
 	{
 		Texture[i] = loadDDS(texName[i].c_str());
 	}
