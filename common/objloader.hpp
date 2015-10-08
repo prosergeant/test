@@ -41,6 +41,14 @@ bool loadAssImp(
 // - More secure. Change another line and you can inject code.
 // - Loading from memory, stream, etc
 
+class err1 : public exception
+{
+	virtual const char* what() const throw()
+	{
+		return "File not found";
+	}
+} notFound;
+
 bool loadOBJ(
 	const char * path, 
 	std::vector<glm::vec3> & out_vertices, 
@@ -57,7 +65,7 @@ bool loadOBJ(
 
 	FILE * file = fopen(path, "r");
 	if( file == NULL ){
-		throw 2;
+		throw notFound;
 		printf("Impossible to open the file ! Are you in the right path ? See Tutorial 1 for details\n");
 		getchar();
 		return false;
