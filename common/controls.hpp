@@ -57,7 +57,8 @@ float speed = 30.0f; // 3 units / second
 float mouseSpeed = 0.004f;
 
 bool onGround = false;
-bool sp = false;
+bool qp = false;
+bool wire = false;
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
@@ -143,13 +144,17 @@ void computeMatricesFromInputs(){
 		//position.y += deltaTime * pow(speed, 8); // * speed * speed * speed * speed;
 		position += up * deltaTime * speed;
 	}
-	if (glfwGetKey( window, GLFW_KEY_SPACE ) == GLFW_RELEASE && onGround == true){
-		sp = false;
-	}
+	//if (glfwGetKey( window, GLFW_KEY_SPACE ) == GLFW_RELEASE && onGround == true) sp = false;
 	// Move Down
 	if (glfwGetKey( window, GLFW_KEY_LEFT_CONTROL ) == GLFW_PRESS){
 		position -= up * deltaTime * speed;
 	}
+	
+	if (glfwGetKey( window, GLFW_KEY_Q ) == GLFW_PRESS && qp == false){
+		qp = true;
+		wire = !wire;
+	}
+	if (glfwGetKey( window, GLFW_KEY_Q ) == GLFW_RELEASE) qp = false;
 	
 	//if (glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) == GLFW_PRESS)speed = 160.0f;
 	
