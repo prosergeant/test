@@ -1,123 +1,12 @@
-void CleanVBO();
-
-void createBufAndDraw(std::vector<glm::vec3> vertices, std::vector<glm::vec2> uvs, std::vector<glm::vec3> normals, std::vector<unsigned short> indices, GLuint shader, GLuint Texture, GLuint TextureID, int x, int y, int z)
-{
-	GLuint vertexbuffer;
-	GLuint uvbuffer;
-	GLuint normalbuffer;
-	GLuint elementbuffer;
-	
-	glGenBuffers(1, &vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
- 
-	
-	glGenBuffers(1, &uvbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
- 
-	
-	glGenBuffers(1, &normalbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
-	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
-	
-	
-	glGenBuffers(1, &elementbuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
-
-	glUseProgram(shader);
-	
-	// Bind our texture in Texture Unit 0
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, Texture);
-	// Set our "myTextureSampler" sampler to user Texture Unit 0
-
-	glUniform1i(TextureID, 0);
-
-		GLuint vertexPosition_modelspaceID = glGetAttribLocation(shader, "vertexPosition_modelspace");
-		GLuint vertexUVID = glGetAttribLocation(shader, "vertexUV");
-		GLuint vertexNormal_modelspaceID = glGetAttribLocation(shader, "vertexNormal_modelspace"); 
-		
-		// 1rst attribute buffer : vertices
-		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-		glVertexAttribPointer(
-			vertexPosition_modelspaceID,  // The attribute we want to configure
-			3,                            // size
-			GL_FLOAT,                     // type
-			GL_FALSE,                     // normalized?
-			0,                            // stride
-			(void*)0                      // array buffer offset
-		);
- 
-		// 2nd attribute buffer : UVs
-		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-		glVertexAttribPointer(
-			vertexUVID,                   // The attribute we want to configure
-			2,                            // size : U+V => 2
-			GL_FLOAT,                     // type
-			GL_FALSE,                     // normalized?
-			0,                            // stride
-			(void*)0                      // array buffer offset
-		);
- 
-		// 3rd attribute buffer : normals
-		glEnableVertexAttribArray(2);
-		glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
-		glVertexAttribPointer(
-			vertexNormal_modelspaceID,    // The attribute we want to configure
-			3,                            // size
-			GL_FLOAT,                     // type
-			GL_FALSE,                     // normalized?
-			0,                            // stride
-			(void*)0                      // array buffer offset
-		);
-		
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-		
-		glm::mat4 ProjectionMatrix = getProjectionMatrix();
-		glm::mat4 ViewMatrix = getViewMatrix();
-		glm::mat4 TranslationMatrix = glm::translate(mat4(), vec3(x,y,z)); // A bit to the left
-		glm::mat4 ModelMatrix = TranslationMatrix; // * RotationMatrix * ScalingMatrix;
- 
-		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
-		
-		GLuint MatrixID = glGetUniformLocation(shader, "MVP");
-		GLuint ViewMatrixID = glGetUniformLocation(shader, "V");
-		GLuint ModelMatrixID = glGetUniformLocation(shader, "M");
-		
-		// Send our transformation to the currently bound shader, 
-		// in the "MVP" uniform
-		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
-		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
-		
-		glDrawElements(
-				GL_TRIANGLES,      // mode
-				indices.size(),    // count
-				GL_UNSIGNED_SHORT,   // type
-				(void*)0           // element array buffer offset
-			);
-			
-		glDeleteBuffers(1, &vertexbuffer);
-		glDeleteBuffers(1, &uvbuffer);
-		glDeleteBuffers(1, &normalbuffer);
-		glDeleteBuffers(1, &elementbuffer);
-}
-
-/*void CleanVBO()
-{
-		glDeleteBuffers(1, &vertexbuffer);
-		glDeleteBuffers(1, &uvbuffer);
-		glDeleteBuffers(1, &normalbuffer);
-		glDeleteBuffers(1, &elementbuffer);
-}
-*/
-
 #include <string>
 #include <glm/gtc/type_ptr.hpp>
+
+void VectCreate (glm::vec3 p_start, glm::vec3 p_end, glm::vec3 &p_vector)
+{
+	p_vector.x = p_end.x - p_start.x;
+	p_vector.y = p_end.y - p_start.y;
+	p_vector.z = p_end.z - p_start.z;
+}
 
 class Obj
 {
@@ -129,10 +18,11 @@ class Obj
 	glm::vec3 vel;			// Velocity
 	glm::vec3 force;
 	glm::vec3 size;
+	glm::vec3 wid;
 	float Rx, Ry, Rz;
 	float frustum[6][4];
 	float bsphere_radius;
-	glm::vec3 Rot;
+	glm::vec3 rot;
 	std::vector<glm::vec3> vert;
 	std::vector<glm::vec2> uv;
 	std::vector<glm::vec3> norm;
@@ -159,6 +49,10 @@ class Obj
 		size.x = 1.0f;
 		size.y = 1.0f;
 		size.z = 1.0f;
+		
+		rot.x = 0.0f;
+		rot.y = 0.0f;
+		rot.z = 0.0f;
 		/*
 		vert = vertt;
 		uv = uvv;
@@ -310,11 +204,11 @@ class Obj
 		if(sp == false) Rot.y += 0;
 		*/
 		glm::mat4 ScalingMatrix = glm::scale(size.x, size.y, size.z); //1.0f, 1.0f, 1.0f); //10.0f,10.0f,10.0f);
-		//glm::mat4 RotationMatrix = eulerAngleYXZ(0.0f, 0.0f, 1.0f);//Rot.y,Rot.x,Rot.z);
+		glm::mat4 RotationMatrix = eulerAngleYXZ(rot.y,rot.x,rot.z);
 		glm::mat4 ProjectionMatrix = getProjectionMatrix();
 		glm::mat4 ViewMatrix = getViewMatrix();
 		glm::mat4 TranslationMatrix = glm::translate(mat4(), vec3(pos.x,pos.y,pos.z)); // A bit to the left
-		glm::mat4 ModelMatrix = TranslationMatrix * ScalingMatrix; // * TranslationMatrix * RotationMatrix * ScalingMatrix;
+		glm::mat4 ModelMatrix = TranslationMatrix * RotationMatrix * ScalingMatrix;
 		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 		GLuint MatrixID = glGetUniformLocation(shaderr, "MVP");
 		GLuint ViewMatrixID = glGetUniformLocation(shaderr, "V");
@@ -377,12 +271,14 @@ class Obj
 		/**
 		
 		*/
+		if(wire == false){
 		glDrawElements(
 				GL_TRIANGLES,      // mode
 				indicess.size(),    // count
 				GL_UNSIGNED_SHORT,   // type
 				(void*)0           // element array buffer offset
 			);
+		} else glDrawElements(GL_LINES, indicess.size(), GL_UNSIGNED_SHORT,0);
 			
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
@@ -542,20 +438,11 @@ class Obj
 		
 		//Object radius (It uses the extreme points of the AABB)
 		VectCreate(aabb[0], aabb[6], l_vector);
-		bsphere_radius = VectLength(l_vector)/2;
+		wid = l_vector;
+		bsphere_radius = glm::length(l_vector)/2; //VectLength(l_vector)/2;
 	}
 	
-	float VectLength (glm::vec3 p_vector)
-	{
-		return (float)(sqrt(p_vector.x*p_vector.x + p_vector.y*p_vector.y + p_vector.z*p_vector.z));
-	}
-	
-	void VectCreate (glm::vec3 p_start, glm::vec3 p_end, glm::vec3 &p_vector)
-	{
-		p_vector.x = p_end.x - p_start.x;
-		p_vector.y = p_end.y - p_start.y;
-		p_vector.z = p_end.z - p_start.z;
-	}
+	//float VectLength (glm::vec3 p_vector)	{		return (float)(sqrt(p_vector.x*p_vector.x + p_vector.y*p_vector.y + p_vector.z*p_vector.z));}
 	
 	void CreateAABB()
 	{
@@ -609,6 +496,8 @@ class Obj
 		FOR(8)
 		{
 			aabb[i] *= size;
+			//aabb[i].x = aabb[i].z * cos(rot.y) - aabb[i].x * sin(rot.y);
+			//aabb[i].y = aabb[i].z * cos(rot.y) + aabb[i].x * sin(rot.y);
 			aabb[i] += pos;
 		}
 	}
@@ -620,7 +509,7 @@ class Obj
 		{
 			n = glm::vec3(rand()%3-1, rand()%3-1, rand()%3-1);
 		}
-		while(VectLength(n) < 1);
+		while(/*VectLength(n)*/glm::length(n) < 1);
 		return n;
 	}
 	
@@ -676,31 +565,47 @@ struct cube
 	vector<glm::vec2> st_uv;
 	vector<glm::vec3> st_norm;
 	vector<unsigned short> st_indices;
+	int size;
 	
 	bool operator+=( cube& that) {
-		FOR(st_vert.size())
+		FOR(that.st_vert.size())
 		{
-			if(that.st_vert.size() > this->st_vert.size())
-				this->st_vert.reserve(that.st_vert.size());
-			this->st_vert[i] += that.st_vert[i];
+			//if(that.st_vert.size() > this->st_vert.size())
+			//	this->st_vert.reserve(that.st_vert.size());
+			//this->st_vert[i] += that.st_vert[i];
+			this->st_vert.push_back(that.st_vert[i]);
 		}
-		FOR(st_uv.size())
+		FOR(that.st_uv.size())
 		{
-			if(that.st_uv.size() > this->st_uv.size())
-				this->st_uv.reserve(that.st_uv.size());
-			this->st_uv[i] += that.st_uv[i];
+			//if(that.st_uv.size() > this->st_uv.size())
+			//	this->st_uv.reserve(that.st_uv.size());
+			//this->st_uv[i] += that.st_uv[i];
+			this->st_uv.push_back(that.st_uv[i]);
 		}
-		FOR(st_norm.size())
+		FOR(that.st_norm.size())
 		{
-			if(that.st_norm.size() > this->st_norm.size())
-				this->st_norm.reserve(that.st_norm.size());
-			this->st_norm[i] += that.st_norm[i];
+			//if(that.st_norm.size() > this->st_norm.size())
+			//	this->st_norm.reserve(that.st_norm.size());
+			//this->st_norm[i] += that.st_norm[i];
+			this->st_norm.push_back(that.st_norm[i]);
+			
+				
+	
+			//for(int i = 0; this->st_vert.size()*3; i+=3)
+			//{
+			//	glm::vec3 n = glm::normalize(glm::cross(this->st_vert[i+1] - this->st_vert[i], this->st_vert[i+2] - this->st_vert[i]));
+			//	this->st_norm.push_back(n);
+			//}
+		
 		}
 		FOR(that.st_indices.size())
 		{
-			if(that.st_indices.size() > this->st_indices.size())
-				this->st_indices.reserve(that.st_indices.size());
-			this->st_indices[i] += that.st_indices[i];
+			//if(that.st_indices.size() > this->st_indices.size())
+			//	this->st_indices.reserve(that.st_indices.size());
+			//this->st_indices[i] += that.st_indices[i];
+			//this->st_indices.push_back(that.st_indices[i]);
+			unsigned short test = that.st_indices[i] + size; //*size;
+			this->st_indices.push_back(test);
 		}
 		
 		return this;
@@ -725,8 +630,9 @@ cube CreatePlane(float radius, int s) //, int width, int height)
 	std::vector<glm::vec3> vert(width*height);
 	std::vector<glm::vec2> uv(width*height);
 	std::vector<glm::vec3> norm(width*height);
-	//std::vector<unsigned short> indis;
+	
 	cube cub;
+	cub.size = s*s;
 	
 	///vert.reserve(width*height);
 	///norm.reserve(width*height);
@@ -765,19 +671,6 @@ cube CreatePlane(float radius, int s) //, int width, int height)
 		}
 	}
 	
-	/*
-	for(int i = 0; i < vert.size() * 3; i += 3)
-	{
-		glm::vec3 n = (glm::cross( vert[i+1] - vert[i], vert[i+2] - vert[i] ));
-		float sin_alpha = glm::length(n) / (glm::length(vert[i+1] - vert[i]) * glm::length(vert[i+2] - vert[i]));
-		glm::vec3 normal = glm::normalize(n) * asin(sin_alpha);
-		glm::vec3 norm1 = (dot(normal,position) < 0.0) ? normal : -normal;
-		norm.push_back(norm1);
-		//norm.push_back(normal);
-		//norm.push_back(normal);
-	}
-	*/
-	
 	FOR(vert.size())
 	{
 		vert[i] = -vert[i];
@@ -788,11 +681,10 @@ cube CreatePlane(float radius, int s) //, int width, int height)
 	cub.st_norm = norm;
 
 	
-	
+	int j = 1;
+	int k = s-1;
 	for(int i = 0; i < cub.st_vert.size()-s; i++)
-	{
-		static int j = 1;
-		static int k = s-1;
+	{ 
 		if(i == k) { k += s; j++; continue; }
 
 		cub.st_indices.push_back(i);
@@ -802,27 +694,34 @@ cube CreatePlane(float radius, int s) //, int width, int height)
 		cub.st_indices.push_back(j);
 		cub.st_indices.push_back(j+s);
 		cub.st_indices.push_back(j+s-1);
-		printf("Loading... %.1f%\n", (float)i*100.0f/(float)cub.st_vert.size());
+		//printf("Loading... %.1f%\n", (float)i*100.0f/(float)cub.st_vert.size());
 		j++;
 	}
 	
 	return cub;
 }
 
-cube CreateQuad(glm::vec3 origin, glm::vec3 w, glm::vec3 len)
+cube CreateQuad(float width, float length) //glm::vec3 origin, glm::vec3 w, glm::vec3 len)
 {
 	cube poly;
+	
+	glm::vec3 origin(0.0f, 0.0f, 0.0f);
+	glm::vec3 w(width, 0.0f, 0.0f);
+	glm::vec3 len(0.0f, 0.0f, length);
 	
 	poly.st_vert.push_back(origin);
 	poly.st_vert.push_back(origin + len);
 	poly.st_vert.push_back(origin + len + w);
 	poly.st_vert.push_back(origin + w);
 	
+	glm::vec3 n = glm::normalize(glm::cross(len, w));
+	
 	FOR(poly.st_vert.size())
 	{
-		glm::vec3 normal = glm::normalize(poly.st_vert[i]);
-		poly.st_norm.push_back(normal);
+		//glm::vec3 normal = glm::normalize(poly.st_vert[i]);
+		poly.st_norm.push_back(n);
 	}
+	
 	
 	poly.st_indices.push_back(0);
 	poly.st_indices.push_back(1);
@@ -832,112 +731,14 @@ cube CreateQuad(glm::vec3 origin, glm::vec3 w, glm::vec3 len)
 	poly.st_indices.push_back(2);
 	poly.st_indices.push_back(3);
 	
+	poly.st_uv.push_back(glm::vec2(0.0f, 0.0f));
+	poly.st_uv.push_back(glm::vec2(0.0f, 1.0f));
+	poly.st_uv.push_back(glm::vec2(1.0f, 1.0f));
+	poly.st_uv.push_back(glm::vec2(1.0f, 0.0f));
 	
-	FOR(poly.st_vert.size())
-	{
-		poly.st_uv.push_back(glm::vec2(rand()%2, rand()%2));
-	}
+	poly.size = poly.st_indices.size()-1;
 	
 	return poly;
-}
-
-cube CreateCube(glm::vec3 width, glm::vec3 length, glm::vec3 height)
-{
-	glm::vec3 temp;
-	temp.x = -width.x * 0.5f;
-	temp.y = -width.y * 0.5f;
-	temp.z = -width.z * 0.5f;
-	
-	glm::vec3 corner0 = temp;
-	
-	temp.x = length.x * 0.5f;
-	temp.y = length.y * 0.5f;
-	temp.z = length.z * 0.5f;
-	
-	corner0 -= length;
-	
-	temp.x = height.x * 0.5f;
-	temp.y = height.y * 0.5f;
-	temp.z = height.z * 0.5f;
-	
-	corner0 -= height;
-	
-	temp.x = width.x * 0.5f;
-	temp.y = width.y * 0.5f;
-	temp.z = width.z * 0.5f;
-	
-	glm::vec3 corner1 = width;
-	
-	temp.x = length.x * 0.5f;
-	temp.y = length.y * 0.5f;
-	temp.z = length.z * 0.5f;
-	
-	corner1 += length;
-	
-	temp.x = height.x * 0.5f;
-	temp.y = height.y * 0.5f;
-	temp.z = height.z * 0.5f;
-
-	corner1 += height;
-	
-	//glm::vec3 corner0 = -width.x*0.5f - length*0.5f - height*0.5f;
-    //glm::vec3 corner1 = width*0.5f + length*0.5f + height*0.5f;
-
-    cube combine[6]; // = new CombineInstance[6];
-    combine[0] = CreateQuad(corner0, length, width);
-    combine[1] = CreateQuad(corner0, width, height);
-    combine[2] = CreateQuad(corner0, height, length);
-    combine[3] = CreateQuad(corner1, -width, -length);
-    combine[4] = CreateQuad(corner1, -height, -width);
-    combine[5] = CreateQuad(corner1, -length, -height);
-	
-	/*
-	for(int i = 1; i < 6; i++)
-	{
-		combine[0] += combine[i];  //<- тут надо индексы складывать
-	}
-	*/
-	
-	for(int i = 1; i < 6; i++)
-	{
-		for(int j = 0; j < combine[i].st_indices.size(); j++)
-		{
-			combine[0].st_indices.push_back(combine[i].st_indices[j]);
-		}
-		
-		for(int j = 0; j < combine[i].st_vert.size(); j++)
-		{
-			combine[0].st_vert.push_back(combine[i].st_vert[j]);
-		}
-		
-		for(int j = 0; j < combine[i].st_uv.size(); j++)
-		{
-			combine[0].st_uv.push_back(combine[i].st_uv[j]);
-		}
-		
-		for(int j = 0; j < combine[i].st_norm.size(); j++)
-		{
-			combine[0].st_norm.push_back(combine[i].st_norm[j]);
-		}
-	}
-	
-	/*
-	vector<glm::vec3> t_vert, t_norm;
-	vector<glm::vec2> t_uv;
-	
-	indexVBO(combine[0].st_vert,
-			 combine[0].st_uv,
-			 combine[0].st_norm,
-			 combine[0].st_indices,
-			 t_vert,
-			 t_uv,
-			 t_norm);
-	combine[0].st_vert = t_vert;
-	combine[0].st_uv = t_uv;
-	combine[0].st_norm = t_norm;
-	*/
-	
-	return combine[0];
 }
 
 cube CreateOcto(float radius)
@@ -1002,4 +803,76 @@ cube CreateOcto(float radius)
 	cub.st_indices.push_back(4);
 	
     return cub;
+}
+
+cube CreateSphere(float radius, int size)
+{
+	cube _cub[6]; //, cub;
+	///----Create plane & 0 face
+	_cub[0] = CreatePlane(radius, size);
+	_cub[1] = _cub[0];
+	_cub[2] = _cub[0];
+	_cub[3] = _cub[0];
+	_cub[4] = _cub[0];
+	_cub[5] = _cub[0];
+
+	///----Create a 1 face
+	
+	glm::mat4 RR = eulerAngleYXZ((float)M_PI/2, 0.0f, 0.0f);
+	FOR(_cub[1].st_vert.size())
+	{
+		glm::vec4 rotatee = RR * glm::vec4(_cub[1].st_vert[i], 1.0f);
+		glm::vec3 rr(rotatee);
+		_cub[1].st_vert[i] = rr;
+	}
+	
+	///----Create a 2 face
+	
+	RR = eulerAngleYXZ((float)M_PI, 0.0f, 0.0f);
+	FOR(_cub[2].st_vert.size())
+	{
+		glm::vec4 rotatee = RR * glm::vec4(_cub[2].st_vert[i], 1.0f);
+		glm::vec3 rr(rotatee);
+		_cub[2].st_vert[i] = rr;
+	}
+	
+	///----Create a 3 face
+	
+	RR = eulerAngleYXZ(-(float)M_PI/2, 0.0f, 0.0f);
+	FOR(_cub[3].st_vert.size())
+	{
+		glm::vec4 rotatee = RR * glm::vec4(_cub[3].st_vert[i], 1.0f);
+		glm::vec3 rr(rotatee);
+		_cub[3].st_vert[i] = rr;
+	}
+	
+	///----Create a 4 face
+	
+	RR = eulerAngleYXZ(0.0f, (float)M_PI/2, 0.0f);
+	FOR(_cub[4].st_vert.size())
+	{
+		glm::vec4 rotatee = RR * glm::vec4(_cub[4].st_vert[i], 1.0f);
+		glm::vec3 rr(rotatee);
+		_cub[4].st_vert[i] = rr;
+	}
+	
+	///----Create a 5 face
+	
+	RR = eulerAngleYXZ(0.0f, -(float)M_PI/2, 0.0f);
+	FOR(_cub[5].st_vert.size())
+	{
+		glm::vec4 rotatee = RR * glm::vec4(_cub[5].st_vert[i], 1.0f);
+		glm::vec3 rr(rotatee);
+		_cub[5].st_vert[i] = rr;
+	}
+	
+	///--------------------
+	
+	_cub[4] += _cub[5];
+	_cub[3] += _cub[4];
+	_cub[2] += _cub[3];
+	_cub[1] += _cub[2];
+	_cub[0] += _cub[1];
+	//cub = _cub[0];
+	return _cub[0];
 }
