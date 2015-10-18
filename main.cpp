@@ -1,4 +1,4 @@
-// v 0.0.7
+// v 0.0.8
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -33,6 +33,7 @@ GLFWwindow* window;
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/transform.hpp"
 #include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 
 const int Texture_n = 3;
@@ -98,7 +99,7 @@ void billboard_draw(GLuint shader, float x, float y, float z);
 bool dist(int distt, glm::vec3 one)
 {
 	bool result = false;
-	int rdist = distt - distt - distt;
+	int rdist = -distt;
 	if(one.x >= distt) result = true;
 	else if(one.x <= rdist) result = true;
 	
@@ -183,7 +184,7 @@ int main()
 
 	glDepthFunc(GL_LESS); 
 
-	glEnable(GL_CULL_FACE); // нужно отключить при рисовании планеты
+	glEnable(GL_CULL_FACE);
 	
 	GLuint VertexArrayID;
 	glGenVertexArrays(1, &VertexArrayID);
@@ -230,9 +231,8 @@ int main()
 	}
 	*/	
 
-	
 	cube cub;
-	cub = CreatePlane(100.0f, 20);
+	cub = CreateSphere(100.0f, 10);
 	
 	{
 	ofstream f;
@@ -256,28 +256,25 @@ int main()
 		f << cub.st_norm.at(i).x << " " << cub.st_norm.at(i).y << " " << cub.st_norm.at(i).z << endl;
 	}
 	
-	
-	int i = 0;
-		do
-		{
-		f << "f ";
-		f << cub.st_indices.at(i)   << "/" << cub.st_indices.at(i+1) << "/" << cub.st_indices.at(i+2) << " "; //<< endl;
-		f << cub.st_indices.at(i+3) << "/" << cub.st_indices.at(i+4) << "/" << cub.st_indices.at(i+5) << " ";
-		f << cub.st_indices.at(i+6) << "/" << cub.st_indices.at(i+7) << "/" << cub.st_indices.at(i+8) << endl;
-		i += 9;
-		}while(i+9 < cub.st_indices.size());
-
-	
+	int k = 1;
+	int k1 = 3;
+	f << "f ";
+	FOR(cub.st_indices.size())
+	{
+		f << cub.st_indices[i]+1 << " ";
+		if(k == k1) { k1 += 3; f << endl << "f "; } 
+		k++;
+	}	
 	f.close();
 	}
 	
-
+	
 	objs.push_back(new Obj(300.0f, 0.0f, 300.0f,
-					cub.st_vert,
-					cub.st_uv,
-					cub.st_norm,
-					cub.st_indices,
-					Texture[0]));		
+							cub.st_vert,
+							cub.st_uv,
+							cub.st_norm,
+							cub.st_indices,
+							Texture[0]));
 	
 	
 	position = glm::vec3(posX, posY, posZ);
